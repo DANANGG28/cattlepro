@@ -68,7 +68,7 @@ if ($keyword) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="bg-[#F0F2F5] font-sans flex overflow-hidden w-full h-screen relative text-gray-800">
 
@@ -106,9 +106,14 @@ if ($keyword) {
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><i class="fas fa-search"></i></span>
                 <input type="text" name="search" value="<?php echo htmlspecialchars($keyword); ?>" placeholder="Cari kode atau jenis sapi..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white">
             </form>
-            <button onclick="document.getElementById('modal-tambah').classList.remove('hidden')" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 whitespace-nowrap">
-                <i class="fas fa-plus"></i> Tambah Sapi
-            </button>
+            <div class="flex items-center gap-2">
+                <a href="export_sapi.php" target="_blank" class="bg-white border border-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl text-sm hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-file-export text-emerald-500"></i> Export Semua
+                </a>
+                <button onclick="document.getElementById('modal-tambah').classList.remove('hidden')" class="bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-plus"></i> Tambah Sapi
+                </button>
+            </div>
         </div>
 
         <!-- Table -->
@@ -157,6 +162,9 @@ if ($keyword) {
                                     <div class="flex items-center justify-center gap-2">
                                         <a href="detail_sapi.php?id=<?php echo $s['id']; ?>" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition" title="Detail">
                                             <i class="fas fa-eye text-xs"></i>
+                                        </a>
+                                        <a href="export_sapi.php?id=<?php echo $s['id']; ?>" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition" title="Export / Cetak">
+                                            <i class="fas fa-print text-xs"></i>
                                         </a>
                                         <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($s)); ?>)" class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition" title="Edit">
                                             <i class="fas fa-pen text-xs"></i>

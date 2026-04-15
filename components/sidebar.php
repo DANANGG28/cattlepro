@@ -2,6 +2,7 @@
 // Sidebar Component
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
     #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     
@@ -19,27 +20,27 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <aside id="sidebar" class="hidden md:flex flex-col w-[250px] bg-[#0A3622] h-screen shrink-0 z-20">
     
     <!-- Logo Area -->
-    < class="p-5 pb-4">
-        < class="flex items-center gap-3">
-            < class="w-10 h-10 bg-[#00D084] rounded-xl flex items-center justify-center shadow-lg">
+    <div class="p-5 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#00D084] rounded-xl flex items-center justify-center shadow-lg">
                 <i class="fas fa-cow text-[#0A3622] text-xl"></i>
-            </>
+            </div>
             <h1 class="text-xl font-extrabold text-white tracking-tight">CattlePro</h1>
-        </>
-    </>
+        </div>
+    </div>
 
     <!-- User Info -->
-    < class="px-5 mb-6 mt-2">
-        < class="bg-[#144834] rounded-2xl p-3 flex items-center gap-3 border border-[#1d5c44]">
-            < class="w-10 h-10 bg-[#00D084] rounded-full flex items-center justify-center text-[#0A3622] font-black text-lg shadow">
+    <div class="px-5 mb-6 mt-2">
+        <div class="bg-[#144834] rounded-2xl p-3 flex items-center gap-3 border border-[#1d5c44]">
+            <div class="w-10 h-10 bg-[#00D084] rounded-full flex items-center justify-center text-[#0A3622] font-black text-lg shadow">
                 <?php echo isset($current_user['nama']) ? strtoupper(substr($current_user['nama'], 0, 1)) : 'S'; ?>
-            </>
-            < class="flex-1 min-w-0">
+            </div>
+            <div class="flex-1 min-w-0">
                 <p class="text-[13px] font-bold text-white truncate"><?php echo isset($current_user['nama']) ? htmlspecialchars($current_user['nama']) : 'Super Admin'; ?></p>
                 <p class="text-[10px] text-[#00D084] uppercase font-bold tracking-wider mt-0.5"><?php echo isset($current_user['role']) ? htmlspecialchars(strtoupper($current_user['role'])) : 'SUPERADMIN'; ?></p>
-            </>
-        </>
-    </>
+            </div>
+        </div>
+    </div>
 
     <!-- Navigation -->
     <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
@@ -66,15 +67,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-users-cog text-lg w-6 text-center"></i>
             <span class="font-bold">Manajemen User</span>
         </a>
-    <av>
+    </nav>
 
     <!-- Footer -->
-    < class="p-5">
+    <div class="p-5">
         <a href="logout.php" class="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#142e23] border border-[#224536] text-[#fc8181] hover:bg-[#1d4030] transition-all duration-200 group">
             <i class="fas fa-sign-out-alt text-lg group-hover:text-[#ff9e9e]"></i>
             <span class="font-bold text-[13px]">Keluar Sistem</span>
         </a>
-    </>
+    </div>
 </aside>
 
 <!-- Mobile Bottom Navigation -->
@@ -97,4 +98,4 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="text-[10px] font-bold">Users</span>
         </a>
     </div>
-<av>
+</nav>
