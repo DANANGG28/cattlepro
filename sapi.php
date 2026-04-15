@@ -36,6 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_sapi'])) {
 
     if ($sapi->update()) {
         $pesan = "Data sapi berhasil diperbarui!";
+        $sapi->logActivity($_SESSION['user_id'], 'edit_sapi', "Mengubah data informasi sapi: {$_POST['kode_sapi']}");
     } else {
         $error = "Gagal memperbarui data sapi.";
     }
@@ -43,8 +44,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_sapi'])) {
 
 // Handle Hapus Sapi
 if (isset($_GET['hapus'])) {
+    // Info for logging before deleting
+    $sapi_to_delete = $sapi->getById($_GET['hapus']);
     if ($sapi->delete($_GET['hapus'])) {
         $pesan = "Sapi berhasil dihapus!";
+        if ($sapi_to_delete) {
+            $sapi->logActivity($_SESSION['user_id'], 'hapus_sapi', "Menghapus sapi dari sistem: {$sapi_to_delete['kode_sapi']}");
+        }
     } else {
         $error = "Gagal menghapus sapi.";
     }
@@ -159,18 +165,26 @@ if ($keyword) {
                                     <?php echo isset($s['last_admin']) ? htmlspecialchars($s['last_admin']) : '-'; ?>
                                 </td>
                                 <td class="p-4 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <a href="detail_sapi.php?id=<?php echo $s['id']; ?>" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition" title="Detail">
-                                            <i class="fas fa-eye text-xs"></i>
+                                    <div class="flex items-center justify-center gap-4">
+                                        <!-- Kelola -->
+                                        <a href="detail_sapi.php?id=<?php echo $s['id']; ?>" class="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition font-bold text-xs" title="Kelola Reproduksi">
+                                            <i class="fas fa-stethoscope text-sm"></i>
+                                            <span>Kelola</span>
                                         </a>
-                                        <a href="export_sapi.php?id=<?php echo $s['id']; ?>" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition" title="Export / Cetak">
-                                            <i class="fas fa-print text-xs"></i>
+
+                                        <!-- PDF/Export -->
+                                        <a href="export_sapi.php?id=<?php echo $s['id']; ?>" target="_blank" class="text-indigo-500 hover:text-indigo-600 transition" title="Export PDF">
+                                            <i class="fas fa-file-pdf text-sm"></i>
                                         </a>
-                                        <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($s)); ?>)" class="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition" title="Edit">
-                                            <i class="fas fa-pen text-xs"></i>
+
+                                        <!-- Edit -->
+                                        <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($s)); ?>)" class="text-blue-500 hover:text-blue-600 transition" title="Edit Data">
+                                            <i class="fas fa-pen-to-square text-sm"></i>
                                         </button>
-                                        <a href="?hapus=<?php echo $s['id']; ?>" onclick="return confirm('Yakin ingin menghapus sapi ini?')" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition" title="Hapus">
-                                            <i class="fas fa-trash text-xs"></i>
+
+                                        <!-- Hapus -->
+                                        <a href="?hapus=<?php echo $s['id']; ?>" onclick="return confirm('Yakin ingin menghapus sapi ini?')" class="text-red-500 hover:text-red-600 transition" title="Hapus Data">
+                                            <i class="fas fa-trash text-sm"></i>
                                         </a>
                                     </div>
                                 </td>

@@ -102,7 +102,7 @@ foreach($semua_sapi as $key => $s) {
 $recent_sapi_table = array_slice($semua_sapi, 0, 5);
 
 // Get recent activities for the timeline log
-$recentActivities = $sapi->getRecentActivities(8)->fetchAll(PDO::FETCH_ASSOC);
+$recentActivities = $sapi->getRecentActivities(5)->fetchAll(PDO::FETCH_ASSOC);
 ?>
  
 <!DOCTYPE html>
@@ -173,7 +173,7 @@ $recentActivities = $sapi->getRecentActivities(8)->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <span class="text-[10px] text-gray-400 font-medium">Perhatian</span>
                 </div>
-                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1 truncate">Gagal Hamil</h3>
+                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1 truncate"> Sapi Gagal Hamil</h3>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_gagal_hamil; ?></div>
             </div>
 
@@ -209,7 +209,7 @@ $recentActivities = $sapi->getRecentActivities(8)->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <span class="text-[10px] text-gray-400 font-medium">Sehat</span>
                 </div>
-                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Sapi Bunting</h3>
+                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Sapi Hamil</h3>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_bunting; ?></div>
             </div>
         </div>

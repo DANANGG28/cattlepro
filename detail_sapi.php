@@ -11,7 +11,7 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-$id_sapi = $_GET['id'];
+$id_sapi = intval($_GET['id']);
 $data_sapi = $sapi->getById($id_sapi);
 
 if (!$data_sapi) {
@@ -19,41 +19,43 @@ if (!$data_sapi) {
     exit;
 }
 
-
+// --- Handle hapus_birahi via GET (redirect after) ---
 if (isset($_GET['hapus_birahi'])) {
     if ($sapi->deleteBirahi($_GET['hapus_birahi'])) {
-        $pesan = "Data birahi berhasil dihapus.";
-        // Jika status sapi sedang dalam tahap 'Sudah Birahi', kembalikan statusnya ke 'Kosong'
         if ((isset($data_sapi['status_reproduksi']) ? $data_sapi['status_reproduksi'] : 'Kosong') == 'Sudah Birahi') {
             $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
-            $data_sapi = $sapi->getById($id_sapi); // Refresh data agar form ikut berubah
         }
+        $_SESSION['flash_pesan'] = "Data birahi berhasil dihapus.";
     }
+    header("Location: detail_sapi.php?id=" . $id_sapi);
+    exit;
 }
 
-// Proses form input historis
+// --- PRG: Proses form POST lalu redirect ---
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Input Birahi
     if (isset($_POST['simpan_birahi'])) {
-        $tanggal_birahi = $_POST['tanggal_birahi'] . ' ' . date('H:i:s'); // Combine with current time if only date is passed
-        if(isset($_POST['waktu_birahi'])){
-            $tanggal_birahi = $_POST['tanggal_birahi'] . ' ' . $_POST['waktu_birahi'];
+        $tanggal_birahi = trim($_POST['tanggal_birahi']) . ' ' . date('H:i:s');
+        if(!empty($_POST['waktu_birahi'])){
+            $time_part = trim($_POST['waktu_birahi']);
+            if (strlen($time_part) == 5) $time_part .= ':00';
+            $tanggal_birahi = trim($_POST['tanggal_birahi']) . ' ' . $time_part;
         }
         $sapi->createBirahi($id_sapi, $tanggal_birahi);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
-        $pesan = "Data birahi ditambahkan. Status sapi: Sudah Birahi.";
         $sapi->logActivity($_SESSION['user_id'], 'tambah_birahi', "Mencatat birahi sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi); // Refresh
+        $_SESSION['flash_pesan'] = "Data birahi ditambahkan. Status sapi: Sudah Birahi.";
     }
 
     // Input Inseminasi
     if (isset($_POST['simpan_ib'])) {
-        $sapi->setTanggalIB($id_sapi, $_POST['tanggal_ib']);
+        $tgl_ib = str_replace('T', ' ', trim($_POST['tanggal_ib']));
+        if (strlen($tgl_ib) == 16) $tgl_ib .= ':00';
+        $sapi->setTanggalIB($id_sapi, $tgl_ib);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
-        $pesan = "Data Inseminasi divalidasi. Status sapi: Sudah IB.";
         $sapi->logActivity($_SESSION['user_id'], 'inseminasi', "Melakukan IB pada sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Data Inseminasi divalidasi. Status sapi: Sudah IB.";
     }
 
     // Input PKB
@@ -61,27 +63,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $hasil = $_POST['hasil_pkb'];
         if ($hasil == 'Bunting') {
             $sapi->updateStatusReproduksi($id_sapi, 'Bunting');
-            $pesan = "Selamat! Sapi dinyatakan Bunting.";
+            $_SESSION['flash_pesan'] = "Selamat! Sapi dinyatakan Bunting.";
         } elseif ($hasil == 'Gagal') {
             $sapi->updateStatusReproduksi($id_sapi, 'Gagal Hamil');
             $sapi->setTanggalIB($id_sapi, null);
-            $pesan = "Sapi gagal hamil. Status diubah: Gagal Hamil.";
+            $_SESSION['flash_pesan'] = "Sapi gagal hamil. Status diubah: Gagal Hamil.";
         } else {
             $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
             $sapi->setTanggalIB($id_sapi, null);
-            $pesan = "Sapi tidak bunting. Status kembali: Kosong.";
+            $_SESSION['flash_pesan'] = "Sapi tidak bunting. Status kembali: Kosong.";
         }
         $sapi->logActivity($_SESSION['user_id'], 'pkb', "Pemeriksaan Kebuntingan {$data_sapi['kode_sapi']}: $hasil");
-        $data_sapi = $sapi->getById($id_sapi);
     }
 
     // Input Kelahiran
     if (isset($_POST['simpan_kelahiran'])) {
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
         $sapi->setTanggalIB($id_sapi, null);
-        $pesan = "Data kelahiran dicatat. Status sapi kembali: Kosong.";
         $sapi->logActivity($_SESSION['user_id'], 'kelahiran', "Mencatat kelahiran sapi dari indukan: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Data kelahiran dicatat. Status sapi kembali: Kosong.";
     }
 
     // Batal Birahi
@@ -91,41 +91,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $sapi->deleteBirahi($latest['id']);
         }
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
-        $pesan = "Status birahi dibatalkan. Kembali ke tahap kosong.";
         $sapi->logActivity($_SESSION['user_id'], 'batal_birahi', "Membatalkan laporan birahi sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Status birahi dibatalkan. Kembali ke tahap kosong.";
     }
 
     // Batal IB
     if (isset($_POST['batal_ib'])) {
         $sapi->setTanggalIB($id_sapi, null);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
-        $pesan = "Laporan IB dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
         $sapi->logActivity($_SESSION['user_id'], 'batal_ib', "Membatalkan laporan IB sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Laporan IB dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
     }
 
     // Batal Bunting
     if (isset($_POST['batal_bunting'])) {
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
-        $pesan = "Status bunting dibatalkan. Sapi kembali ke tahap Sudah IB.";
         $sapi->logActivity($_SESSION['user_id'], 'batal_bunting', "Membatalkan status bunting sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Status bunting dibatalkan. Sapi kembali ke tahap Sudah IB.";
     }
 
     // Reset Gagal Hamil
     if (isset($_POST['reset_gagal'])) {
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
-        $pesan = "Status gagal hamil direset. Sapi kembali ke tahap Kosong.";
         $sapi->logActivity($_SESSION['user_id'], 'reset_gagal', "Mereset status gagal hamil sapi: {$data_sapi['kode_sapi']}");
-        $data_sapi = $sapi->getById($id_sapi);
+        $_SESSION['flash_pesan'] = "Status gagal hamil direset. Sapi kembali ke tahap Kosong.";
     }
 
+    // PRG: Redirect setelah semua POST selesai
+    header("Location: detail_sapi.php?id=" . $id_sapi);
+    exit;
+}
 
+// --- Flash message dari session (setelah redirect) ---
+$pesan = null;
+if (isset($_SESSION['flash_pesan'])) {
+    $pesan = $_SESSION['flash_pesan'];
+    unset($_SESSION['flash_pesan']);
 }
 
 // Ambil histori birahi setelah semua proses POST/GET selesei
 $histori_birahi = $sapi->getBirahiByIdSapi($id_sapi);
+$riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
 ?>
 
 <!DOCTYPE html>
@@ -137,7 +143,7 @@ $histori_birahi = $sapi->getBirahiByIdSapi($id_sapi);
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body class="bg-[#F0F2F5] font-sans flex overflow-hidden w-full h-screen relative">
 
@@ -153,9 +159,9 @@ $histori_birahi = $sapi->getBirahiByIdSapi($id_sapi);
         <div class="ml-auto flex items-center"><?php include 'components/profile_dropdown.php'; ?></div>
     </header>
 
-    <main class="p-4 pb-36 md:p-6 md:pb-6 space-y-6 max-w-4xl">
+    <main class="p-4 pb-36 md:p-6 md:pb-6 space-y-6 w-full">
         
-        <?php if(isset($pesan)): ?>
+        <?php if(!empty($pesan)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative flex items-center gap-2 text-sm">
                 <i class="fas fa-check-circle"></i>
                 <span><?php echo $pesan; ?></span>
@@ -387,6 +393,63 @@ $histori_birahi = $sapi->getBirahiByIdSapi($id_sapi);
                     </form>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Card: Riwayat Reproduksi (Vertical Timeline) -->
+        <div class="bg-[#0A3622] rounded-2xl shadow-xl p-6 relative overflow-hidden">
+            <!-- Glassmorphism decorative elements -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full filter blur-[80px] -translate-y-1/2 translate-x-1/3"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/20 rounded-full filter blur-[60px] translate-y-1/3 -translate-x-1/4"></div>
+            
+            <h4 class="font-bold text-white mb-6 flex items-center gap-2 relative z-10 text-lg">
+                <i class="fas fa-stream text-[#00D084]"></i> Riwayat Reproduksi (Timeline)
+            </h4>
+            
+            <div class="relative z-10 pl-3">
+                <div class="absolute left-[19px] top-2 bottom-2 w-0.5 bg-white/10"></div>
+                <div class="space-y-6">
+                    <?php if(count($riwayat_aktivitas) > 0): ?>
+                        <?php foreach($riwayat_aktivitas as $log): 
+                            $jenis = $log['jenis'];
+                            // Tentukan ikon dan warna berdasarkan jenis aktivitas
+                            $icon = "fas fa-info";
+                            $bg_color = "bg-gray-500/20";
+                            $text_color = "text-gray-300";
+                            
+                            if (strpos($jenis, 'birahi') !== false) {
+                                $icon = "fas fa-calendar-alt"; $bg_color = "bg-pink-500/20"; $text_color = "text-pink-400";
+                            } elseif (strpos($jenis, 'inseminasi') !== false || strpos($jenis, 'ib') !== false) {
+                                $icon = "fas fa-syringe"; $bg_color = "bg-blue-500/20"; $text_color = "text-blue-400";
+                            } elseif (strpos($jenis, 'pkb') !== false) {
+                                $icon = "fas fa-stethoscope"; $bg_color = "bg-purple-500/20"; $text_color = "text-purple-400";
+                            } elseif (strpos($jenis, 'bunting') !== false) {
+                                $icon = "fas fa-baby"; $bg_color = "bg-green-500/20"; $text_color = "text-green-400";
+                            } elseif (strpos($jenis, 'kelahiran') !== false) {
+                                $icon = "fas fa-baby-carriage"; $bg_color = "bg-emerald-500/20"; $text_color = "text-emerald-400";
+                            } elseif (strpos($jenis, 'gagal') !== false) {
+                                $icon = "fas fa-times-circle"; $bg_color = "bg-red-500/20"; $text_color = "text-red-400";
+                            } else {
+                                $icon = "fas fa-check"; $bg_color = "bg-emerald-500/20"; $text_color = "text-[#00D084]";
+                            }
+                        ?>
+                        <div class="relative pl-8">
+                            <span class="absolute -left-3 top-1 flex h-8 w-8 items-center justify-center rounded-full <?php echo $bg_color; ?> border border-white/10 backdrop-blur-md">
+                                <i class="<?php echo $icon; ?> text-[13px] <?php echo $text_color; ?>"></i>
+                            </span>
+                            <div class="bg-white/5 border border-white/10 backdrop-blur-sm rounded-xl p-4 transition hover:bg-white/10">
+                                <p class="text-sm text-gray-200"><?php echo htmlspecialchars($log['deskripsi']); ?></p>
+                                <div class="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                                    <i class="far fa-clock"></i>
+                                    <span><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="pl-6 text-sm text-gray-400 italic">Belum ada riwayat reproduksi.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
 
         <!-- Card: Arsip Histori Birahi -->

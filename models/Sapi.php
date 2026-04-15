@@ -184,6 +184,45 @@ class Sapi {
         return $stmt;
     }
 
+    // Get combined history by sapi ID
+    public function getHistoryBySapi($id) {
+        $data = $this->getById($id);
+        if (!$data) return [];
+        $kode = '%' . $data['kode_sapi'] . '%';
+
+        // 1. Fetch from log_aktivitas (matching kode_sapi in deskripsi)
+        $query_log = "SELECT created_at, jenis_aktivitas as jenis, deskripsi FROM log_aktivitas WHERE deskripsi LIKE :kode";
+        $stmt_log = $this->conn->prepare($query_log);
+        $stmt_log->bindParam(':kode', $kode);
+        $stmt_log->execute();
+        $logs = $stmt_log->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Fetch from birahi table
+        $query_birahi = "SELECT tanggal_birahi as created_at, 'birahi_record' as jenis, 'Data birahi dicatat ke dalam database' as deskripsi FROM birahi WHERE id_sapi = :id";
+        $stmt_birahi = $this->conn->prepare($query_birahi);
+        $stmt_birahi->bindParam(':id', $id);
+        $stmt_birahi->execute();
+        $birahis = $stmt_birahi->fetchAll(PDO::FETCH_ASSOC);
+
+        // 3. Combine and Sort by created_at DESC
+        $logs = is_array($logs) ? $logs : [];
+        $birahis = is_array($birahis) ? $birahis : [];
+        
+        $history = array_merge($logs, $birahis);
+        
+        if (is_array($history)) {
+            usort($history, function($a, $b) {
+                $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
+                $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
+                return ($timeB ?: 0) <=> ($timeA ?: 0);
+            });
+        } else {
+            $history = [];
+        }
+
+        return $history;
+    }
+
     // --- Prediction Methods ---
 
     // Calculate reproduction prediction score
