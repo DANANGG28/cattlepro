@@ -127,7 +127,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="flex-1 h-screen overflow-y-auto w-full transition-all duration-300 relative flex flex-col bg-[#F0F2F5]" id="main-content">
 
     <header class="bg-white shadow-sm border-b border-gray-200 p-4 px-6 flex justify-between items-center sticky top-0 z-10 w-full">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fas fa-users-cog text-amber-500 mr-2"></i>Manajemen User</h2>
+        <h2 class="text-xl font-bold text-slate-800">Manajemen User</h2>
         <div class="flex items-center gap-4 ml-auto">
             <?php include '../components/profile_dropdown.php'; ?>
         </div>
@@ -146,50 +146,20 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         <?php endif; ?>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Total User</p>
-                    <p class="text-2xl font-bold text-slate-800"><?php echo count($all_users); ?></p>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center text-xl">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Admin</p>
-                    <p class="text-2xl font-bold text-slate-800"><?php echo count(array_filter($all_users, fn($u) => $u['role'] === 'admin')); ?></p>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 col-span-2 md:col-span-1">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-xl">
-                    <i class="fas fa-user-tie"></i>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Petugas</p>
-                    <p class="text-2xl font-bold text-slate-800"><?php echo count(array_filter($all_users, fn($u) => $u['role'] === 'petugas')); ?></p>
-                </div>
-            </div>
-        </div>
 
         <!-- Main Table & Cards Section -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <!-- Unified Section Header -->
             <div class="p-5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-white to-blue-50/30">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 shadow-sm">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
                         <i class="fas fa-users-cog text-lg"></i>
                     </div>
                     <div>
                         <h3 class="font-bold text-[16px] text-slate-800">Daftar Pengguna Sistem</h3>
                         <div class="flex items-center gap-2 mt-0.5">
-                            <span class="flex h-2 w-2 rounded-full bg-amber-500"></span>
-                            <span class="text-[10px] text-amber-600 uppercase font-bold tracking-widest">Access Control List</span>
+                            <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                            <span class="text-[10px] text-emerald-600 uppercase font-bold tracking-widest">Access Control List</span>
                         </div>
                     </div>
                 </div>
@@ -198,11 +168,11 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="relative flex-1 max-w-md lg:mx-4">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                     <input type="text" id="userSearch" placeholder="Cari Nama atau Email User..." 
-                           class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all shadow-sm">
+                           class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm">
                 </div>
 
                 <button onclick="document.getElementById('modal-user').classList.remove('hidden')"
-                    class="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-200/50 flex items-center justify-center gap-2">
+                    class="bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:from-emerald-600 hover:to-green-700 transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2">
                     <i class="fas fa-user-plus"></i> Tambah User
                 </button>
             </div>
@@ -226,7 +196,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td class="p-4 text-gray-400 font-mono text-xs"><?php echo $no++; ?></td>
                             <td class="p-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                                    <div class="w-9 h-9 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
                                         <?php echo strtoupper(substr($u['nama'], 0, 1)); ?>
                                     </div>
                                     <div>
@@ -247,11 +217,11 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td class="p-4">
                                 <div class="flex items-center justify-center gap-2">
                                     <button onclick="openEditPassword(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
-                                        class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 inline-flex items-center justify-center hover:bg-amber-500 hover:text-white transition shadow-sm" title="Edit Password">
+                                        class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 inline-flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm" title="Edit Password">
                                         <i class="fas fa-key text-xs"></i>
                                     </button>
                                     <button onclick="openEditNip(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($u['nip'] ?? '', ENT_QUOTES); ?>')"
-                                        class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 inline-flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm" title="Edit Nama & NIP">
+                                        class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center hover:bg-blue-500 hover:text-white transition shadow-sm" title="Edit Nama & NIP">
                                         <i class="fas fa-id-card text-xs"></i>
                                     </button>
                                     <?php if ($u['id'] != $_SESSION['user_id']): ?>
@@ -276,7 +246,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="p-5 space-y-4 user-card">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold shadow-sm">
+                            <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-xl flex items-center justify-center text-white font-bold shadow-sm">
                                 <?php echo strtoupper(substr($u['nama'], 0, 1)); ?>
                             </div>
                             <div>
@@ -296,7 +266,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
                         <button onclick="openEditPassword(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
-                            class="flex-1 bg-amber-50 text-amber-600 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2">
+                            class="flex-1 bg-emerald-50 text-emerald-600 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2">
                             <i class="fas fa-key"></i> Password
                         </button>
                         <?php if ($u['id'] != $_SESSION['user_id']): ?>
@@ -318,8 +288,8 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-plus text-amber-500"></i>
+                <div class="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-plus text-emerald-500"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-800">Tambah User Baru</h3>
             </div>
@@ -329,17 +299,17 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nama Lengkap</label>
                 <input type="text" name="nama" required placeholder="contoh: Budi Santoso"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition bg-gray-50 focus:bg-white">
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Email</label>
                 <input type="email" name="email" required placeholder="contoh: budi@cattlepro.com"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition bg-gray-50 focus:bg-white">
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Password</label>
                 <input type="password" name="password" required placeholder="Minimal 6 karakter"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition bg-gray-50 focus:bg-white">
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Role</label>
@@ -352,7 +322,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <button type="button" onclick="document.getElementById('modal-user').classList.add('hidden')"
                     class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Batal</button>
                 <button type="submit" name="tambah_user"
-                    class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition shadow-lg shadow-amber-200">
+                    class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm hover:from-emerald-600 hover:to-green-700 transition shadow-lg shadow-emerald-200">
                     <i class="fas fa-save mr-1"></i> Simpan
                 </button>
             </div>
@@ -411,8 +381,8 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-key text-amber-500"></i>
+                <div class="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-key text-emerald-500"></i>
                 </div>
                 <div>
                     <h3 class="text-lg font-bold text-slate-800">Edit Password</h3>
@@ -427,7 +397,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Password Baru</label>
                 <div class="relative">
                     <input type="password" name="new_password" id="new_password" required placeholder="Minimal 6 karakter"
-                        class="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition bg-gray-50 focus:bg-white">
+                        class="w-full px-4 py-2.5 pr-11 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
                     <button type="button" onclick="toggleVis('new_password', 'eye1')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
                         <i class="fas fa-eye text-sm" id="eye1"></i>
                     </button>
@@ -444,15 +414,15 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <p id="pass-match-msg" class="text-xs mt-1.5 hidden"></p>
             </div>
-            <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2">
-                <i class="fas fa-info-circle text-amber-500 mt-0.5 flex-shrink-0"></i>
-                <p class="text-xs text-amber-700">Password minimal 6 karakter. User akan perlu login ulang setelah password diubah.</p>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+                <i class="fas fa-info-circle text-emerald-500 mt-0.5 flex-shrink-0"></i>
+                <p class="text-xs text-emerald-700">Password minimal 6 karakter. User akan perlu login ulang setelah password diubah.</p>
             </div>
             <div class="flex gap-3 pt-1">
                 <button type="button" onclick="closeEditPassword()"
                     class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Batal</button>
                 <button type="submit" name="edit_password"
-                    class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition shadow-lg shadow-amber-200">
+                    class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm hover:from-emerald-600 hover:to-green-700 transition shadow-lg shadow-emerald-200">
                     <i class="fas fa-save mr-1"></i> Simpan Password
                 </button>
             </div>
