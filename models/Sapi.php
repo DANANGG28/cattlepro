@@ -171,7 +171,6 @@ class Sapi {
         return $stmt->execute();
     }
 
-    // Get recent activities
     public function getRecentActivities($limit = 8) {
         $query = "SELECT la.*, u.nama, u.role 
                   FROM log_aktivitas la 
@@ -180,6 +179,17 @@ class Sapi {
                   LIMIT :limit";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt;
+    }
+
+    // Get all activities
+    public function getAllActivities() {
+        $query = "SELECT la.*, u.nama, u.role 
+                  FROM log_aktivitas la 
+                  JOIN users u ON la.user_id = u.id 
+                  ORDER BY la.created_at DESC";
+        $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
     }

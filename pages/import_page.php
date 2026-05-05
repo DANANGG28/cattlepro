@@ -11,60 +11,74 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
     $file = $_FILES['file_import']['tmp_name'];
+    $file_ext = strtolower(pathinfo($_FILES['file_import']['name'], PATHINFO_EXTENSION));
     
-    $handle = fopen($file, 'r');
-    if (!$handle) {
-        $error = 'Gagal membuka file. Coba lagi.';
+    if ($file_ext !== 'csv') {
+        $error = 'Format file tidak valid! Pastikan Anda melakukan "Save As" ke format CSV di Excel sebelum upload.';
     } else {
-        $success_count = 0;
-        $error_count = 0;
-        $row_index = 0;
+        $handle = fopen($file, 'r');
+        if (!$handle) {
+            $error = 'Gagal membuka file. Coba lagi.';
+        } else {
+            $success_count = 0;
+            $error_count = 0;
+            $row_index = 0;
 
-        while (($data = fgetcsv($handle, 2000, ',')) !== FALSE) {
-            $row_index++;
+            while (($data = fgetcsv($handle, 2000, ',')) !== FALSE) {
+                $row_index++;
 
-            // Skip header row
-            if ($row_index == 1) continue;
+                // Skip header row
+                if ($row_index == 1) continue;
 
-            // Skip empty rows or rows with too few columns
-            if (count($data) < 4 || empty(trim($data[0]))) continue;
+                // Skip empty rows or rows with too few columns
+                if (count($data) < 4 || empty(trim($data[0]))) continue;
 
-            // Skip guide/hint rows (row 2 in template has instructions)
-            if (
-                stripos(trim($data[0]), 'wajib') !== false ||
-                trim($data[2]) === 'YYYY-MM-DD'
-            ) continue;
+                // Skip guide/hint rows
+                if (
+                    stripos(trim($data[0]), 'wajib') !== false ||
+                    trim($data[2]) === 'YYYY-MM-DD'
+                ) continue;
 
-            $sapi->kode_sapi    = trim($data[0]);
-            $sapi->jenis        = trim($data[1]);
-            $sapi->tanggal_lahir = trim($data[2]);
-            $sapi->berat        = trim($data[3]);
+                $sapi->kode_sapi    = substr(trim($data[0]), 0, 50); // Mencegah data kepanjangan
+                $sapi->jenis        = substr(trim($data[1]), 0, 50);
+                $sapi->tanggal_lahir = trim($data[2]);
+                $sapi->berat        = trim($data[3]);
 
-            $status_val      = isset($data[4]) ? trim($data[4]) : 'Kosong';
-            $tanggal_status  = isset($data[5]) ? trim($data[5]) : '';
+                $status_val      = isset($data[4]) ? trim($data[4]) : 'Kosong';
+                $tanggal_status  = isset($data[5]) ? trim($data[5]) : '';
 
-            $valid_statuses = ['Kosong', 'Sudah Birahi', 'Sudah IB', 'Bunting'];
-            if (!in_array($status_val, $valid_statuses)) {
-                $status_val = 'Kosong';
+                $valid_statuses = ['Kosong', 'Sudah Birahi', 'Sudah IB', 'Bunting'];
+                if (!in_array($status_val, $valid_statuses)) {
+                    $status_val = 'Kosong';
+                }
+
+                $sapi->status_reproduksi = $status_val;
+
+                try {
+                    $new_id = $sapi->create();
+                    if ($new_id) {
+                        $success_count++;
+                        if ($status_val === 'Sudah Birahi' && !empty($tanggal_status)) {
+                            $sapi->createBirahi($new_id, $tanggal_status);
+                        } elseif (in_array($status_val, ['Sudah IB', 'Bunting']) && !empty($tanggal_status)) {
+                            $sapi->setTanggalIB($new_id, $tanggal_status);
+                        }
+                    } else {
+                        $error_count++;
+                    }
+                } catch (PDOException $e) {
+                    $error_count++;
+                    // Optional: log error message $e->getMessage()
+                }
             }
 
-            $sapi->status_reproduksi = $status_val;
-
-            $new_id = $sapi->create();
-            if ($new_id) {
-                $success_count++;
-                if ($status_val === 'Sudah Birahi' && !empty($tanggal_status)) {
-                    $sapi->createBirahi($new_id, $tanggal_status);
-                } elseif (in_array($status_val, ['Sudah IB', 'Bunting']) && !empty($tanggal_status)) {
-                    $sapi->setTanggalIB($new_id, $tanggal_status);
-                }
+            fclose($handle);
+            if ($success_count > 0 || $error_count > 0) {
+                $pesan = "Import selesai! $success_count data berhasil dimasukkan" . ($error_count > 0 ? ", $error_count baris gagal/dilewati." : ".");
             } else {
-                $error_count++;
+                $error = "Tidak ada data valid yang bisa di-import. Pastikan file CSV sesuai template.";
             }
         }
-
-        fclose($handle);
-        $pesan = "Import selesai! $success_count data berhasil dimasukkan" . ($error_count > 0 ? ", $error_count data gagal." : ".");
     }
 }
 ?>

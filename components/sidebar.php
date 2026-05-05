@@ -68,6 +68,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-users-cog text-lg w-6 text-center"></i>
             <span class="font-bold">Manajemen User</span>
         </a>
+
+        <a href="aktivitas.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'aktivitas.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+            <i class="fas fa-history text-lg w-6 text-center"></i>
+            <span class="font-bold">Log Aktivitas</span>
+        </a>
         <?php endif; ?>
     </nav>
 

@@ -103,6 +103,19 @@ $recent_sapi_table = array_slice($semua_sapi, 0, 5);
 
 // Get recent activities for the timeline log
 $recentActivities = $sapi->getRecentActivities(5)->fetchAll(PDO::FETCH_ASSOC);
+$allActivities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
+
+// Activity Visualization Config
+$activity_config = [
+    'tambah_sapi' => ['icon' => 'fas fa-plus', 'bg' => 'bg-blue-100', 'color' => 'text-blue-500', 'label' => 'Registrasi Sapi'],
+    'tambah_birahi' => ['icon' => 'fas fa-venus-mars', 'bg' => 'bg-pink-100', 'color' => 'text-pink-500', 'label' => 'Birahi Tercatat'],
+    'inseminasi' => ['icon' => 'fas fa-syringe', 'bg' => 'bg-amber-100', 'color' => 'text-amber-500', 'label' => 'Inseminasi (IB)'],
+    'pkb' => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100', 'color' => 'text-purple-500', 'label' => 'Pemeriksaan (PKB)'],
+    'kelahiran' => ['icon' => 'fas fa-baby', 'bg' => 'bg-emerald-100', 'color' => 'text-emerald-500', 'label' => 'Kelahiran'],
+    'batal_birahi' => ['icon' => 'fas fa-undo', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal Birahi'],
+    'batal_ib' => ['icon' => 'fas fa-times', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal IB'],
+    'edit_sapi' => ['icon' => 'fas fa-edit', 'bg' => 'bg-gray-100', 'color' => 'text-gray-500', 'label' => 'Update Data']
+];
 ?>
  
 <!DOCTYPE html>
@@ -281,51 +294,29 @@ $recentActivities = $sapi->getRecentActivities(5)->fetchAll(PDO::FETCH_ASSOC);
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col xl:col-span-1">
                 <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-50">
                     <h3 class="font-bold text-[16px] text-slate-800 flex items-center gap-2"><i class="fas fa-history text-slate-400"></i> Aktivitas Terbaru</h3>
-                    <button class="text-xs text-emerald-600 font-bold hover:underline" onclick="alert('Feature coming soon')">Lihat Semua</button>
+                    <button onclick="document.getElementById('modal-all-activity').classList.remove('hidden')" class="text-xs text-emerald-600 font-bold hover:underline">Lihat Semua</button>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div class="relative border-l-2 border-gray-100 ml-3 space-y-6 pb-4">
                         <?php foreach ($recentActivities as $act): 
-                            $iconClass = "fas fa-info-circle";
-                            $colorClass = "text-gray-500 bg-gray-100";
-                            $iconColor = "text-gray-500";
-                            $title = str_replace('_', ' ', ucwords($act['jenis_aktivitas']));
-                            
-                            if ($act['jenis_aktivitas'] == 'tambah_sapi') {
-                                $colorClass = "bg-blue-100";
-                                $iconColor = "text-blue-500";
-                                $iconClass = "fas fa-plus";
-                                $title = "Registrasi Sapi";
-                                $actionName = "mendaftarkan";
-                            } elseif ($act['jenis_aktivitas'] == 'tambah_birahi') {
-                                $colorClass = "bg-pink-100";
-                                $iconColor = "text-pink-500";
-                                $iconClass = "fas fa-venus-mars";
-                                $title = "Birahi Tercatat";
-                                $actionName = "mencatat";
-                            } elseif ($act['jenis_aktivitas'] == 'hitung_prediksi') {
-                                $colorClass = "bg-purple-100";
-                                $iconColor = "text-purple-500";
-                                $iconClass = "fas fa-stethoscope";
-                                $title = "Diagnosis Medis";
-                                $actionName = "mengecek";
-                            } else {
-                                $actionName = "melakukan";
-                            }
-                            
+                            $cfg = $activity_config[$act['jenis_aktivitas']] ?? [
+                                'icon' => 'fas fa-info-circle',
+                                'bg' => 'bg-gray-100',
+                                'color' => 'text-gray-500',
+                                'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
+                            ];
                             $adminName = htmlspecialchars(explode(' ', $act['nama'])[0]);
                         ?>
                         <div class="relative pl-6 group">
-                            <span class="absolute -left-[14px] top-1 flex h-7 w-7 items-center justify-center rounded-full <?php echo $colorClass; ?> ring-4 ring-white shadow-sm transition-transform group-hover:scale-110">
-                                <i class="<?php echo $iconClass; ?> text-[11px] <?php echo $iconColor; ?>"></i>
+                            <span class="absolute -left-[14px] top-1 flex h-7 w-7 items-center justify-center rounded-full <?php echo $cfg['bg']; ?> ring-4 ring-white shadow-sm transition-transform group-hover:scale-110">
+                                <i class="<?php echo $cfg['icon']; ?> text-[11px] <?php echo $cfg['color']; ?>"></i>
                             </span>
                             <div>
-                                <h4 class="font-bold text-slate-800 text-[13px] group-hover:text-emerald-700 transition-colors"><?php echo $title; ?></h4>
+                                <h4 class="font-bold text-slate-800 text-[13px] group-hover:text-emerald-700 transition-colors"><?php echo $cfg['label']; ?></h4>
                                 <p class="text-[12px] text-gray-500 mt-1 leading-relaxed"><span class="font-bold text-gray-700"><?php echo $adminName; ?></span> <?php echo htmlspecialchars($act['deskripsi']); ?></p>
                                 <div class="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 font-semibold tracking-wide">
-                                    <span class="flex items-center gap-1"><i class="far fa-clock"></i> <?php echo date('d M, H:i', strtotime($act['created_at'])); ?></span>
-                                    <span class="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 rounded text-gray-500"><i class="fas fa-user-shield"></i> <?php echo htmlspecialchars(ucfirst($act['role'])); ?></span>
+                                    <span class="flex items-center gap-1"><i class="far fa-clock"></i> <?php echo tgl_indo($act['created_at'], true); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -424,6 +415,97 @@ $recentActivities = $sapi->getRecentActivities(5)->fetchAll(PDO::FETCH_ASSOC);
             }
         });
     });
+</script>
+
+<!-- Modal: Semua Aktivitas -->
+<div id="modal-all-activity" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl h-[85vh] flex flex-col overflow-hidden animate-fade-in">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-white to-blue-50/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                    <i class="fas fa-history text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Riwayat Aktivitas Lengkap</h3>
+                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-0.5">Audit Trail System</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-all-activity').classList.add('hidden')" 
+                    class="w-10 h-10 rounded-xl bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-xl">&times;</button>
+        </div>
+
+        <!-- Search Bar in Modal -->
+        <div class="p-4 bg-gray-50/50 border-b border-gray-100">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="modalActivitySearch" placeholder="Cari aktivitas, nama petugas, atau deskripsi..." 
+                       class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm">
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
+            <div class="relative border-l-2 border-gray-100 ml-3 space-y-8" id="modalActivityList">
+                <?php foreach ($allActivities as $act): 
+                    $cfg = $activity_config[$act['jenis_aktivitas']] ?? [
+                        'icon' => 'fas fa-info-circle',
+                        'bg' => 'bg-gray-100',
+                        'color' => 'text-gray-500',
+                        'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
+                    ];
+                ?>
+                <div class="relative pl-8 modal-activity-item">
+                    <span class="absolute -left-[18px] top-1 flex h-8 w-8 items-center justify-center rounded-xl <?php echo $cfg['bg']; ?> ring-4 ring-white shadow-sm">
+                        <i class="<?php echo $cfg['icon']; ?> text-xs <?php echo $cfg['color']; ?>"></i>
+                    </span>
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                            <h4 class="font-bold text-slate-800 text-sm modal-search-type"><?php echo $cfg['label']; ?></h4>
+                            <span class="text-[10px] text-gray-400 font-bold bg-gray-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                <?php echo tgl_indo($act['created_at'], true); ?>
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed">
+                            <span class="font-bold text-slate-700 modal-search-name"><?php echo htmlspecialchars($act['nama']); ?></span> 
+                            <span class="modal-search-desc"><?php echo htmlspecialchars($act['deskripsi']); ?></span>
+                        </p>
+                        <div class="flex items-center gap-2 mt-2">
+                             <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border border-gray-200 text-gray-400">
+                                ID #<?php echo $act['id']; ?> &bull; <?php echo $act['role']; ?>
+                             </span>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal Search Logic
+document.getElementById('modalActivitySearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.modal-activity-item');
+    
+    items.forEach(item => {
+        const type = item.querySelector('.modal-search-type').innerText.toLowerCase();
+        const name = item.querySelector('.modal-search-name').innerText.toLowerCase();
+        const desc = item.querySelector('.modal-search-desc').innerText.toLowerCase();
+        
+        if (type.includes(searchTerm) || name.includes(searchTerm) || desc.includes(searchTerm)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Close modal on backdrop click
+document.getElementById('modal-all-activity').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.add('hidden');
+});
 </script>
 
 </body>
