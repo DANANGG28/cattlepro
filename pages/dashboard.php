@@ -43,14 +43,14 @@ foreach($semua_sapi as $key => $s) {
                   $notifikasi[] = [
                      'icon' => 'fas fa-exclamation-circle text-orange-500',
                      'bg' => 'bg-orange-50 border-orange-100/50',
-                     'msg' => "Segera lakukan Inseminasi! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam)."
+                     'msg' => "Segera lakukan Inseminasi Buatan! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam)."
                  ];
              }
         }
     } elseif ($status == 'Sudah IB') {
         $count_ib++;
         if ($s['tanggal_ib']) {
-             $semua_sapi[$key]['last_update_text'] = 'IB';
+             $semua_sapi[$key]['last_update_text'] = 'Inseminasi Buatan';
              $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($s['tanggal_ib']));
              
              $waktu_ib = strtotime($s['tanggal_ib']);
@@ -61,7 +61,7 @@ foreach($semua_sapi as $key => $s) {
                  $notifikasi[] = [
                      'icon' => 'fas fa-info-circle text-blue-500',
                      'bg' => 'bg-blue-50/70 border-blue-100',
-                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Cek Kehamilan (PKB) pada " . date('d M Y', $waktu_pkb) . " (H-{$sisa_hari_pkb})."
+                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan pada " . date('d M Y', $waktu_pkb) . " (H-{$sisa_hari_pkb})."
                  ];
              } elseif ($sisa_hari_pkb <= 0) {
                  $notifikasi[] = [
@@ -74,14 +74,14 @@ foreach($semua_sapi as $key => $s) {
     } elseif ($status == 'Bunting') {
         $count_bunting++;
         if ($s['tanggal_ib']) {
-             $semua_sapi[$key]['last_update_text'] = 'PKB'; // Assumption, but actually based on IB
-             $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($s['tanggal_ib'])); // Simplification
+             $semua_sapi[$key]['last_update_text'] = 'Pemeriksaan Kebuntingan'; 
+             $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($s['tanggal_ib'])); 
              
              $waktu_ib = strtotime($s['tanggal_ib']);
              $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
              $sisa_hari_hpl = round(($waktu_hpl - time()) / (24 * 3600));
              
-             if ($sisa_hari_hpl <= 30 && $sisa_hari_hpl > 0) {
+              if ($sisa_hari_hpl <= 30 && $sisa_hari_hpl > 0) {
                  $notifikasi[] = [
                      'icon' => 'fas fa-leaf text-emerald-500',
                      'bg' => 'bg-emerald-50/80 border-emerald-100/50',
@@ -91,7 +91,7 @@ foreach($semua_sapi as $key => $s) {
                  $notifikasi[] = [
                      'icon' => 'fas fa-baby text-emerald-700',
                      'bg' => 'bg-emerald-100 border-emerald-200',
-                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati HPL / Sedang proses kelahiran. Segera laporkan kelahiran."
+                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati Hari Perkiraan Lahir / Sedang proses kelahiran. Segera laporkan kelahiran."
                  ];
              }
         }
@@ -109,11 +109,11 @@ $allActivities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
 $activity_config = [
     'tambah_sapi' => ['icon' => 'fas fa-plus', 'bg' => 'bg-blue-100', 'color' => 'text-blue-500', 'label' => 'Registrasi Sapi'],
     'tambah_birahi' => ['icon' => 'fas fa-venus-mars', 'bg' => 'bg-pink-100', 'color' => 'text-pink-500', 'label' => 'Birahi Tercatat'],
-    'inseminasi' => ['icon' => 'fas fa-syringe', 'bg' => 'bg-amber-100', 'color' => 'text-amber-500', 'label' => 'Inseminasi (IB)'],
-    'pkb' => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100', 'color' => 'text-purple-500', 'label' => 'Pemeriksaan (PKB)'],
+    'inseminasi' => ['icon' => 'fas fa-syringe', 'bg' => 'bg-amber-100', 'color' => 'text-amber-500', 'label' => 'Inseminasi Buatan'],
+    'pkb' => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100', 'color' => 'text-purple-500', 'label' => 'Pemeriksaan Kebuntingan'],
     'kelahiran' => ['icon' => 'fas fa-baby', 'bg' => 'bg-emerald-100', 'color' => 'text-emerald-500', 'label' => 'Kelahiran'],
     'batal_birahi' => ['icon' => 'fas fa-undo', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal Birahi'],
-    'batal_ib' => ['icon' => 'fas fa-times', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal IB'],
+    'batal_ib' => ['icon' => 'fas fa-times', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal Inseminasi Buatan'],
     'edit_sapi' => ['icon' => 'fas fa-edit', 'bg' => 'bg-gray-100', 'color' => 'text-gray-500', 'label' => 'Update Data']
 ];
 ?>
@@ -202,15 +202,15 @@ $activity_config = [
                 <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_birahi; ?></div>
             </div>
 
-            <!-- PKB -->
+            <!-- Pemeriksaan Kebuntingan -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden group">
                  <div class="flex justify-between items-start mb-4">
                     <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                         <i class="fas fa-stethoscope"></i>
                     </div>
-                    <span class="text-[10px] text-gray-400 font-medium">Pasca IB</span>
+                    <span class="text-[10px] text-gray-400 font-medium">Pasca Inseminasi</span>
                 </div>
-                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Menunggu PKB</h3>
+                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Menunggu Pemeriksaan</h3>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_ib; ?></div>
             </div>
 
@@ -404,7 +404,9 @@ $activity_config = [
                         },
                         ticks: {
                             font: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '600' },
-                            color: '#6b7280'
+                            color: '#6b7280',
+                            maxRotation: 0,
+                            minRotation: 0
                         }
                     }
                 },

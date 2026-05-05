@@ -84,7 +84,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
     <Cell ss:StyleID="data"><Data ss:Type="String">Brangus</Data></Cell>
     <Cell ss:StyleID="data"><Data ss:Type="String"><?php echo date('Y-m-d', strtotime('-6 months')); ?></Data></Cell>
     <Cell ss:StyleID="data"><Data ss:Type="Number">385</Data></Cell>
-    <Cell ss:StyleID="data"><Data ss:Type="String">Sudah IB</Data></Cell>
+    <Cell ss:StyleID="data"><Data ss:Type="String">Sudah Inseminasi Buatan</Data></Cell>
     <Cell ss:StyleID="data"><Data ss:Type="String"><?php echo date('Y-m-d'); ?></Data></Cell>
    </Row>
 
@@ -117,7 +117,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
   <DataValidation xmlns="urn:schemas-microsoft-com:office:excel">
    <Range>R3C5:R52C5</Range>
    <Type>List</Type>
-   <Value>&quot;Kosong,Sudah Birahi,Sudah IB,Bunting&quot;</Value>
+   <Value>&quot;Kosong,Sudah Birahi,Sudah Inseminasi Buatan,Bunting&quot;</Value>
   </DataValidation>
 
  </Worksheet>

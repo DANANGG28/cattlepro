@@ -45,6 +45,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sapi->createBirahi($id_sapi, $tanggal_birahi);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
         $sapi->logActivity($_SESSION['user_id'], 'tambah_birahi', "Mencatat birahi sapi: {$data_sapi['kode_sapi']}");
+        
+        // ---- Trigger WA Notification (Fonnte) ----
+        $waktu_birahi = strtotime($tanggal_birahi);
+        $waktu_ib = $waktu_birahi + (12 * 3600); // IB Optimal 12 jam setelah birahi
+        $waktu_ib_text = tgl_indo(date('Y-m-d H:i:s', $waktu_ib), true);
+        
+        $kode_sapi = $data_sapi['kode_sapi'];
+        $nomor_tujuan = '085176984188';
+        
+        $pesan_wa = "✅ *Pencatatan Birahi Berhasil!*\n";
+        $pesan_wa .= "Sapi *{$kode_sapi}* telah tercatat.\n\n";
+        $pesan_wa .= "🗓 *INSTRUKSI JADWAL INSEMINASI BUATAN:*\n";
+        $pesan_wa .= "👉 *" . tgl_indo(date('Y-m-d H:i:s', $waktu_ib), true, true) . "*\n";
+        
+        // Kirim konfirmasi sekarang
+        send_wa($nomor_tujuan, $pesan_wa);
+        
+        // KIRIM PENGINGAT OTOMATIS (12 Jam kemudian)
+        $pesan_reminder = "📢 *PENGINGAT INSEMINASI BUATAN*\n";
+        $pesan_reminder .= "Hari ini adalah waktu optimal untuk melakukan Inseminasi Buatan pada sapi *{$kode_sapi}*. Segera hubungi petugas!";
+        send_wa($nomor_tujuan, $pesan_reminder, (12 * 3600));
+
+        // ---- Backup Telegram Notification ----
+        $pesan_tele = "✅ <b>Pencatatan Birahi Berhasil!</b>\n";
+        $pesan_tele .= "Sapi <b>{$kode_sapi}</b> telah masuk dalam sistem pengawasan.\n\n";
+        $pesan_tele .= "🗓 <b>INSTRUKSI JADWAL INSEMINASI BUATAN:</b>\n";
+        $pesan_tele .= "Mohon lakukan Inseminasi Buatan pada:\n";
+        $pesan_tele .= "👉 <b>" . tgl_indo(date('Y-m-d H:i:s', $waktu_ib), true, true) . "</b>\n";
+        $pesan_tele .= "<i>(Waktu terbaik adalah 12 jam setelah gejala birahi pertama kali muncul)</i>";
+        
+        send_telegram($pesan_tele);
+        // ------------------------------------------
+
         $_SESSION['flash_pesan'] = "Data birahi ditambahkan. Status sapi: Sudah Birahi.";
     }
 
@@ -55,25 +88,92 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sapi->setTanggalIB($id_sapi, $tgl_ib);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
         $sapi->logActivity($_SESSION['user_id'], 'inseminasi', "Melakukan IB pada sapi: {$data_sapi['kode_sapi']}");
+        
+        // ---- Trigger WA & Tele: Inseminasi ----
+        $nomor_tujuan = '085176984188';
+        
+        $waktu_ib_ts = strtotime($tgl_ib);
+        $tgl_pantau = date('Y-m-d', $waktu_ib_ts + (21 * 24 * 3600));
+        $tgl_pkb = date('Y-m-d', $waktu_ib_ts + (60 * 24 * 3600));
+
+        $pesan_wa = "💉 *Laporan Inseminasi Buatan Tersimpan!*\n";
+        $pesan_wa .= "Sapi *{$kode_sapi}* selesai dilakukan Inseminasi.\n\n";
+        $pesan_wa .= "🗓 *JADWAL MONITORING:*\n";
+        $pesan_wa .= "1. Pantau Birahi (H+21): *" . tgl_indo($tgl_pantau, false, true) . "*\n";
+        $pesan_wa .= "2. Cek Kebuntingan (H+60): *" . tgl_indo($tgl_pkb, false, true) . "*";
+
+        // Kirim konfirmasi sekarang
+        send_wa($nomor_tujuan, $pesan_wa);
+        
+        // KIRIM PENGINGAT OTOMATIS (H+21 dan H+60)
+        send_wa($nomor_tujuan, "📢 *PENGINGAT PANTAU BIRAHI*\nSudah 21 hari sejak Inseminasi. Mohon pantau apakah sapi *{$kode_sapi}* birahi lagi.", (21 * 24 * 3600));
+        send_wa($nomor_tujuan, "📢 *PENGINGAT PEMERIKSAAN KEBUNTINGAN*\nSudah 60 hari sejak Inseminasi. Mohon segera jadwalkan pemeriksaan kebuntingan untuk sapi *{$kode_sapi}*.", (60 * 24 * 3600));
+
+        $pesan_tele = "💉 <b>Laporan Inseminasi Buatan Telah Tersimpan!</b>\n";
+        $pesan_tele .= "Sapi <b>{$kode_sapi}</b> baru saja dilakukan Inseminasi Buatan.\n\n";
+        $pesan_tele .= "🗓 <b>JADWAL MONITORING:</b>\n";
+        $pesan_tele .= "1. <b>Pantau Birahi Ulang (H+21)</b>:\nPastikan sapi tidak birahi lagi pada <b>" . tgl_indo($tgl_pantau, false, true) . "</b>\n";
+        $pesan_tele .= "2. <b>Jadwal Pemeriksaan Kebuntingan (H+60)</b>:\nSegera panggil petugas pada <b>" . tgl_indo($tgl_pkb, false, true) . "</b> untuk cek kebuntingan.";
+
+        send_telegram($pesan_tele);
+        // ------------------------------------------
+
         $_SESSION['flash_pesan'] = "Data Inseminasi divalidasi. Status sapi: Sudah IB.";
     }
 
     // Input PKB
     if (isset($_POST['simpan_pkb'])) {
         $hasil = $_POST['hasil_pkb'];
+        $kode_sapi = $data_sapi['kode_sapi'];
+        $nomor_tujuan = '081234567890'; // TODO: Sesuaikan
+
         if ($hasil == 'Bunting') {
             $sapi->updateStatusReproduksi($id_sapi, 'Bunting');
             $_SESSION['flash_pesan'] = "Selamat! Sapi dinyatakan Bunting.";
+            
+            // Jadwal HPL (283 hari dari IB)
+            $waktu_ib = strtotime($data_sapi['tanggal_ib']);
+            $waktu_hpl = date('d M Y', $waktu_ib + (283 * 24 * 3600));
+
+            $pesan = "🎉 *Sapi Positif Bunting!*\n";
+            $pesan .= "Sapi *{$kode_sapi}* dinyatakan Hamil setelah pemeriksaan PKB.\n\n";
+            $pesan .= "🗓 *ESTIMASI KELAHIRAN (HPL):*\n";
+            $pesan .= "👉 *{$waktu_hpl}*\n";
+            $pesan .= "Siapkan kandang pedet dan nutrisi indukan.";
+
         } elseif ($hasil == 'Gagal') {
             $sapi->updateStatusReproduksi($id_sapi, 'Gagal Hamil');
             $sapi->setTanggalIB($id_sapi, null);
             $_SESSION['flash_pesan'] = "Sapi gagal hamil. Status diubah: Gagal Hamil.";
+            
+            $pesan = "⚠️ *Hasil PKB: Gagal Hamil*\n";
+            $pesan .= "Sapi *{$kode_sapi}* dinyatakan tidak hamil/gagal. Silakan evaluasi kondisi kesehatan sapi.";
         } else {
             $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
             $sapi->setTanggalIB($id_sapi, null);
             $_SESSION['flash_pesan'] = "Sapi tidak bunting. Status kembali: Kosong.";
+            
+            $pesan = "ℹ️ *Hasil PKB: Tidak Bunting*\n";
+            $pesan .= "Sapi *{$kode_sapi}* kembali ke status Kosong.";
         }
+        
         $sapi->logActivity($_SESSION['user_id'], 'pkb', "Pemeriksaan Kebuntingan {$data_sapi['kode_sapi']}: $hasil");
+        
+        $nomor_tujuan = '085176984188';
+        
+        // Kirim konfirmasi sekarang (WhatsApp)
+        $pesan_wa = str_replace(['<b>', '</b>'], ['*', '*'], $pesan_tele);
+        send_wa($nomor_tujuan, $pesan_wa);
+        
+        // Jika Bunting, Kirim Pengingat Kelahiran (H-7 dan hari-H HPL)
+        if ($hasil == 'Bunting') {
+            $delay_hpl = strtotime($data_sapi['tanggal_ib']) + (283 * 24 * 3600) - time();
+            if ($delay_hpl > 0) {
+                send_wa($nomor_tujuan, "📢 *PENGINGAT HARI PERKIRAAN LAHIR*\nSapi *{$kode_sapi}* diprediksi akan melahirkan hari ini. Mohon pantau kondisi indukan!", $delay_hpl);
+            }
+        }
+
+        send_telegram($pesan_tele);
     }
 
     // Input Kelahiran
@@ -81,6 +181,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
         $sapi->setTanggalIB($id_sapi, null);
         $sapi->logActivity($_SESSION['user_id'], 'kelahiran', "Mencatat kelahiran sapi dari indukan: {$data_sapi['kode_sapi']}");
+        
+        // ---- Trigger WA & Tele: Kelahiran ----
+        $kode_sapi = $data_sapi['kode_sapi'];
+        $nomor_tujuan = '085176984188';
+        
+        $pesan_tele = "🍼 <b>Kelahiran Tercatat!</b>\n";
+        $pesan_tele .= "Indukan <b>{$kode_sapi}</b> telah melahirkan.\n\n";
+        $pesan_tele .= "Status kembali ke <b>Kosong</b>.";
+
+        // Kirim WhatsApp (Konfirmasi Kelahiran)
+        $pesan_wa = str_replace(['<b>', '</b>'], ['*', '*'], $pesan_tele);
+        send_wa($nomor_tujuan, $pesan_wa);
+
+        send_telegram($pesan_tele);
+        // ------------------------------------------
+
         $_SESSION['flash_pesan'] = "Data kelahiran dicatat. Status sapi kembali: Kosong.";
     }
 
@@ -99,8 +215,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['batal_ib'])) {
         $sapi->setTanggalIB($id_sapi, null);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
-        $sapi->logActivity($_SESSION['user_id'], 'batal_ib', "Membatalkan laporan IB sapi: {$data_sapi['kode_sapi']}");
-        $_SESSION['flash_pesan'] = "Laporan IB dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
+        $sapi->logActivity($_SESSION['user_id'], 'batal_ib', "Membatalkan laporan Inseminasi Buatan sapi: {$data_sapi['kode_sapi']}");
+        $_SESSION['flash_pesan'] = "Laporan Inseminasi Buatan dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
     }
 
     // Batal Bunting
@@ -206,14 +322,14 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                 $status_colors = [
                     'Kosong' => 'bg-gray-100 text-gray-700 border border-gray-300',
                     'Sudah Birahi' => 'bg-pink-50 text-pink-700 border border-pink-200',
-                    'Sudah IB' => 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                    'Sudah IB' => 'bg-blue-100 text-blue-700 border border-blue-200',
                     'Bunting' => 'bg-green-50 text-green-700 border border-green-200',
                     'Gagal Hamil' => 'bg-red-50 text-red-700 border border-red-200'
                 ];
                 $badge_class = isset($status_colors[$status_repro]) ? $status_colors[$status_repro] : $status_colors['Kosong'];
                 ?>
                 <span class="inline-block px-3 py-1.5 rounded-lg text-sm font-bold <?php echo $badge_class; ?>">
-                    <?php echo $status_repro; ?>
+                    <?php echo str_replace(['Sudah IB', 'PKB', 'HPL'], ['Sudah Inseminasi Buatan', 'Pemeriksaan Kebuntingan', 'Hari Perkiraan Lahir'], $status_repro); ?>
                 </span>
             </div>
         </div>
@@ -253,7 +369,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <div class="flex items-start gap-3">
                         <i class="fas fa-info-circle mt-0.5 text-lg text-pink-500"></i>
                         <div class="text-sm">
-                            <p class="font-bold text-pink-700 mb-1">Jadwal IB Optimal:</p>
+                            <p class="font-bold text-pink-700 mb-1">Jadwal Inseminasi Buatan Optimal:</p>
                             <p class="text-gray-700"><?php echo $waktu_ib_text; ?></p>
                             <p class="text-xs text-pink-400 mt-1">(12 Jam setelah terdeteksi birahi)</p>
                         </div>
@@ -274,7 +390,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                                 <p class="text-gray-700"><?php echo date('d M Y', $waktu_pantau); ?></p>
                             </div>
                             <div>
-                                <p class="font-bold text-purple-700">Jadwal Cek PKB (H+60):</p>
+                                <p class="font-bold text-purple-700">Jadwal Pemeriksaan Kebuntingan (H+60):</p>
                                 <p class="text-gray-700"><?php echo date('d M Y', $waktu_pkb); ?></p>
                             </div>
                         </div>
@@ -289,7 +405,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <div class="flex items-start gap-3">
                         <i class="fas fa-info-circle mt-0.5 text-lg text-green-500"></i>
                         <div class="text-sm">
-                            <p class="font-bold text-green-700 mb-1">Perkiraan Melahirkan (HPL):</p>
+                            <p class="font-bold text-green-700 mb-1">Hari Perkiraan Lahir:</p>
                             <p class="text-gray-700"><?php echo date('d M Y', $waktu_hpl); ?></p>
                             <p class="text-xs text-green-400 mt-1">(283 hari sejak Inseminasi Buatan)</p>
                         </div>
@@ -330,15 +446,15 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
             <?php elseif ($status == 'Sudah Birahi'): ?>
                 <div class="bg-white border border-gray-200 rounded-xl p-5">
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        <i class="fas fa-syringe text-blue-500"></i> Lapor Tindakan Inseminasi (IB)
+                        <i class="fas fa-syringe text-blue-500"></i> Lapor Tindakan Inseminasi Buatan
                     </h4>
                     <form method="POST" class="flex flex-col md:flex-row gap-3">
                         <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Tanggal Implementasi IB</label>
+                            <label class="block text-xs text-gray-500 mb-1">Tanggal Implementasi Inseminasi Buatan</label>
                             <input type="datetime-local" name="tanggal_ib" value="<?php echo date('Y-m-d\TH:i'); ?>" required class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-                            <button type="submit" name="simpan_ib" class="flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Data IB</button>
+                            <button type="submit" name="simpan_ib" class="flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Data Inseminasi Buatan</button>
                             <button type="submit" name="batal_birahi" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan status Sudah Birahi dan menghapus log birahi terakhir?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan birahi"><i class="fas fa-undo"></i> Batal</button>
                         </div>
                     </form>
@@ -347,11 +463,11 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                 <!-- PKB Section -->
                 <div class="bg-white border border-gray-200 rounded-xl p-5">
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
-                        <i class="fas fa-stethoscope text-purple-600"></i> Hasil Pemeriksaan Kebuntingan (PKB)
+                        <i class="fas fa-stethoscope text-purple-600"></i> Hasil Pemeriksaan Kebuntingan
                     </h4>
                     <form method="POST" class="flex flex-col md:flex-row gap-3 items-end">
                         <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Status PKB Hasil Pemeriksaan</label>
+                            <label class="block text-xs text-gray-500 mb-1">Status Hasil Pemeriksaan Kebuntingan</label>
                             <select name="hasil_pkb" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-purple-500 focus:border-purple-500">
                                 <option value="Bunting">Bunting (Positif)</option>
                                 <option value="Tidak">Tidak Bunting (Negatif)</option>
@@ -359,8 +475,8 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                             </select>
                         </div>
                         <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-                            <button type="submit" name="simpan_pkb" class="flex items-center justify-center gap-2 bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-purple-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Hasil PKB</button>
-                            <button type="submit" name="batal_ib" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan laporan IB dan kembali ke tahap Sudah Birahi?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan IB"><i class="fas fa-undo"></i> Batal</button>
+                            <button type="submit" name="simpan_pkb" class="flex items-center justify-center gap-2 bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-purple-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Hasil Pemeriksaan Kebuntingan</button>
+                            <button type="submit" name="batal_ib" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan laporan Inseminasi Buatan dan kembali ke tahap Sudah Birahi?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan Inseminasi Buatan"><i class="fas fa-undo"></i> Batal</button>
                         </div>
                     </form>
                 </div>
@@ -376,7 +492,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                         </div>
                         <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
                             <button type="submit" name="simpan_kelahiran" class="flex items-center justify-center gap-2 bg-green-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-green-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Laporkan Kelahiran</button>
-                            <button type="submit" name="batal_bunting" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan status Bunting dan kembali ke tahap Sudah IB?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan Bunting"><i class="fas fa-undo"></i> Batal</button>
+                            <button type="submit" name="batal_bunting" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan status Bunting dan kembali ke tahap Sudah Inseminasi Buatan?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan Bunting"><i class="fas fa-undo"></i> Batal</button>
                         </div>
                     </form>
                 </div>

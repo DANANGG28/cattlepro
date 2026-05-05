@@ -16,6 +16,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_sapi'])) {
     $sapi->tanggal_lahir = $_POST['tanggal_lahir'];
     $sapi->berat = $_POST['berat'];
     $sapi->status_reproduksi = 'Kosong';
+    $sapi->admin_id = $_SESSION['user_id'];
 
     $new_id = $sapi->create();
     if ($new_id) {
@@ -112,7 +113,7 @@ if ($keyword) {
             $status_colors = [
                 'Kosong' => 'bg-gray-100 text-gray-600',
                 'Sudah Birahi' => 'bg-pink-100 text-pink-700',
-                'Sudah IB' => 'bg-amber-100 text-amber-700',
+                'Sudah IB' => 'bg-blue-100 text-blue-700',
                 'Bunting' => 'bg-emerald-100 text-emerald-700',
                 'Gagal Hamil' => 'bg-red-100 text-red-700'
             ];
@@ -155,8 +156,8 @@ if ($keyword) {
                 <table class="w-full text-left text-sm">
                     <thead class="bg-gray-50/50">
                         <tr>
+                            <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Nama / ID & Jenis Sapi</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Informasi Sapi</th>
-                            <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Spesifikasi</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Status</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Admin Terakhir</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em] text-center">Aksi</th>
@@ -166,14 +167,14 @@ if ($keyword) {
                         <?php if(count($semua_sapi) > 0): ?>
                             <?php foreach($semua_sapi as $s): ?>
                             <?php 
-                                $status = $s['status_reproduksi'] ?? 'Kosong';
+                                $status = trim($s['status_reproduksi'] ?? 'Kosong');
                                 $badge = $status_colors[$status] ?? $status_colors['Kosong'];
                             ?>
                             <tr class="hover:bg-gray-50/50 transition border-b border-gray-50 last:border-0 sapi-row">
                                 <td class="p-4">
                                     <div class="flex flex-col">
-                                        <span class="font-bold text-slate-800 text-[14px] search-target"><?php echo htmlspecialchars($s['kode_sapi']); ?></span>
-                                        <span class="text-[11px] text-gray-400 font-medium search-target-sub"><?php echo htmlspecialchars($s['jenis']); ?></span>
+                                        <span class="font-black text-slate-800 text-[16px] search-target"><?php echo htmlspecialchars($s['kode_sapi']); ?></span>
+                                        <span class="text-[12px] text-gray-400 font-bold search-target-sub"><?php echo htmlspecialchars($s['jenis']); ?></span>
                                     </div>
                                 </td>
                                 <td class="p-4">
@@ -189,19 +190,23 @@ if ($keyword) {
                                     </div>
                                 </td>
                                 <td class="p-4">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-sm <?php echo $badge; ?> border border-current/10">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-50"></span>
-                                        <?php echo $status; ?>
+                                    <span class="inline-flex items-center px-4 py-2 rounded-xl text-[12px] font-black shadow-sm <?php echo $badge; ?> border border-current/10">
+                                        <span class="h-2 w-2 rounded-full bg-current mr-2.5 opacity-80"></span>
+                                        <?php echo str_replace('Sudah IB', 'Sudah Inseminasi Buatan', $status); ?>
                                     </span>
                                 </td>
                                 <td class="p-4">
                                     <div class="flex items-center gap-2.5">
-                                        <div class="w-8 h-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center text-[11px] font-bold text-gray-500 border border-gray-200 shadow-sm">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 rounded-full flex items-center justify-center text-[13px] font-black text-gray-500 border border-gray-200 shadow-sm shrink-0">
                                             <?php echo isset($s['last_admin']) ? strtoupper(substr($s['last_admin'], 0, 1)) : '-'; ?>
                                         </div>
+                                        <?php 
+                                            $role_label = 'ADMINISTRATOR'; 
+                                            $role_color = 'text-blue-500';
+                                        ?>
                                         <div class="flex flex-col">
-                                            <span class="text-[11px] text-slate-700 font-bold leading-none"><?php echo isset($s['last_admin']) ? htmlspecialchars($s['last_admin']) : '-'; ?></span>
-                                            <span class="text-[9px] text-gray-400 uppercase tracking-tighter mt-0.5">Petugas Lapangan</span>
+                                            <span class="text-[11px] text-slate-700 font-bold leading-none"><?php echo isset($s['last_admin']) ? htmlspecialchars($s['last_admin']) : 'System/Import'; ?></span>
+                                            <span class="text-[9px] <?php echo $role_color; ?> uppercase tracking-tighter mt-0.5 font-bold"><?php echo $role_label; ?></span>
                                         </div>
                                     </div>
                                 </td>
@@ -237,7 +242,7 @@ if ($keyword) {
             <?php if(count($semua_sapi) > 0): ?>
                 <?php foreach($semua_sapi as $s): ?>
                 <?php 
-                    $status = $s['status_reproduksi'] ?? 'Kosong';
+                    $status = trim($s['status_reproduksi'] ?? 'Kosong');
                     $badge = $status_colors[$status] ?? $status_colors['Kosong'];
                 ?>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4 sapi-card">
@@ -246,9 +251,9 @@ if ($keyword) {
                             <h3 class="text-lg font-bold text-slate-800 search-target-mobile"><?php echo htmlspecialchars($s['kode_sapi']); ?></h3>
                             <p class="text-xs text-gray-400 font-medium search-target-sub-mobile"><?php echo htmlspecialchars($s['jenis']); ?></p>
                         </div>
-                        <span class="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm <?php echo $badge; ?> border border-current/10">
-                            <span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-50"></span>
-                            <?php echo $status; ?>
+                        <span class="inline-flex items-center px-4 py-2 rounded-xl text-[12px] font-black shadow-sm <?php echo $badge; ?>">
+                            <span class="h-2 w-2 rounded-full bg-current mr-2.5 opacity-80"></span>
+                            <?php echo str_replace('Sudah IB', 'Sudah Inseminasi Buatan', $status); ?>
                         </span>
                     </div>
 
@@ -270,11 +275,18 @@ if ($keyword) {
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 bg-gray-50 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-400 border border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center text-[11px] font-bold text-gray-400 border border-gray-100">
                                 <?php echo isset($s['last_admin']) ? strtoupper(substr($s['last_admin'], 0, 1)) : '-'; ?>
                             </div>
-                            <span class="text-[11px] text-gray-500 font-medium truncate max-w-[100px]"><?php echo $s['last_admin'] ?? '-'; ?></span>
+                        <?php 
+                            $role_label = 'ADMINISTRATOR'; 
+                            $role_color = 'text-blue-500';
+                        ?>
+                        <div class="flex flex-col leading-tight">
+                            <span class="text-[12px] text-slate-700 font-bold"><?php echo isset($s['last_admin']) ? htmlspecialchars($s['last_admin']) : 'System/Import'; ?></span>
+                            <span class="text-[10px] <?php echo $role_color; ?> uppercase font-bold tracking-tight"><?php echo $role_label; ?></span>
+                        </div>
                         </div>
                         
                         <div class="flex items-center gap-2">

@@ -11,6 +11,11 @@ if (!isset($current_user['role']) || $current_user['role'] !== 'admin') {
     exit;
 }
 
+// Auto-migrasi: tambah kolom nip jika belum ada
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama");
+} catch (PDOException $e) { /* Kolom sudah ada, abaikan */ }
+
 $pesan = '';
 $error = '';
 
@@ -75,6 +80,27 @@ if (isset($_GET['hapus_user'])) {
         }
     } else {
         $error = "Tidak bisa menghapus akun sendiri.";
+    }
+}
+
+// Handle Edit NIP/NIK & Nama
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_nip'])) {
+    $uid      = intval($_POST['user_id_nip']);
+    $nip      = trim($_POST['nip']);
+    $nama_baru = trim($_POST['nama_baru']);
+    $stmt = $db->prepare("UPDATE users SET nip = :nip, nama = :nama WHERE id = :id");
+    $stmt->bindParam(':nip', $nip);
+    $stmt->bindParam(':nama', $nama_baru);
+    $stmt->bindParam(':id', $uid);
+    if ($stmt->execute()) {
+        $pesan = "Nama & NIP/NIK berhasil diperbarui!";
+        // Refresh current_user jika yang diedit adalah diri sendiri
+        if ($uid == $_SESSION['user_id']) {
+            $current_user['nama'] = $nama_baru;
+            $current_user['nip']  = $nip;
+        }
+    } else {
+        $error = "Gagal memperbarui NIP/NIK.";
     }
 }
 
@@ -188,6 +214,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <tr>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">No</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Nama</th>
+                            <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">NIP / NIK</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Email</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em]">Role</th>
                             <th class="p-4 font-bold text-gray-400 text-[10px] uppercase tracking-[0.1em] text-center">Aksi</th>
@@ -210,6 +237,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     </div>
                                 </div>
                             </td>
+                            <td class="p-4 text-gray-500 text-[12px] font-mono"><?php echo $u['nip'] ? htmlspecialchars($u['nip']) : '<span class="text-gray-300 italic">Belum diisi</span>'; ?></td>
                             <td class="p-4 text-gray-500 text-[13px] search-target-sub"><?php echo htmlspecialchars($u['email']); ?></td>
                             <td class="p-4">
                                 <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold <?php echo $u['role'] == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
@@ -221,6 +249,10 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <button onclick="openEditPassword(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
                                         class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 inline-flex items-center justify-center hover:bg-amber-500 hover:text-white transition shadow-sm" title="Edit Password">
                                         <i class="fas fa-key text-xs"></i>
+                                    </button>
+                                    <button onclick="openEditNip(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($u['nip'] ?? '', ENT_QUOTES); ?>')"
+                                        class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 inline-flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm" title="Edit Nama & NIP">
+                                        <i class="fas fa-id-card text-xs"></i>
                                     </button>
                                     <?php if ($u['id'] != $_SESSION['user_id']): ?>
                                         <a href="?hapus_user=<?php echo $u['id']; ?>" onclick="return confirm('Yakin hapus user <?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>?')"
@@ -328,6 +360,52 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
+</div>
+
+<!-- Modal Edit NIP/NIK -->
+<div id="modal-edit-nip" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-id-card text-emerald-500"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Edit Nama & NIP/NIK</h3>
+                    <p class="text-xs text-gray-400" id="edit-nip-subtitle">Data ini akan muncul di tanda tangan PDF</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-edit-nip').classList.add('hidden')" class="w-8 h-8 rounded-lg bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center text-lg">&times;</button>
+        </div>
+        <form method="POST" class="p-6 space-y-4">
+            <input type="hidden" name="user_id_nip" id="edit-nip-user-id">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nama Lengkap</label>
+                <input type="text" name="nama_baru" id="edit-nip-nama" required placeholder="Nama yang akan muncul di TTD"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">NIP / NIK</label>
+                <input type="text" name="nip" id="edit-nip-value" placeholder="contoh: 19850101 200604 1 001"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white font-mono">
+                <p class="text-[10px] text-gray-400 mt-1">Kosongkan jika tidak ingin menampilkan NIP/NIK di PDF.</p>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2">
+                <i class="fas fa-info-circle text-emerald-500 mt-0.5 flex-shrink-0"></i>
+                <p class="text-xs text-emerald-700">Nama & NIP/NIK ini akan otomatis muncul di blok tanda tangan pada setiap laporan PDF yang dicetak.</p>
+            </div>
+            <div class="flex gap-3 pt-1">
+                <button type="button" onclick="document.getElementById('modal-edit-nip').classList.add('hidden')"
+                    class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Batal</button>
+                <button type="submit" name="edit_nip"
+                    class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold text-sm hover:from-emerald-600 hover:to-green-700 transition shadow-lg shadow-emerald-200">
+                    <i class="fas fa-save mr-1"></i> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal Edit Password -->
 <div id="modal-edit-password" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -383,6 +461,14 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <script>
+function openEditNip(userId, userName, userNip) {
+    document.getElementById('edit-nip-user-id').value = userId;
+    document.getElementById('edit-nip-nama').value = userName;
+    document.getElementById('edit-nip-value').value = userNip;
+    document.getElementById('edit-nip-subtitle').textContent = 'Data tanda tangan PDF untuk: ' + userName;
+    document.getElementById('modal-edit-nip').classList.remove('hidden');
+}
+
 function openEditPassword(userId, userName) {
     document.getElementById('edit-user-id').value = userId;
     document.getElementById('edit-password-subtitle').textContent = 'untuk: ' + userName;

@@ -232,7 +232,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
         }
         .status-kosong { background: rgba(156,163,175,0.2); color: #9ca3af; border: 1px solid rgba(156,163,175,0.3); }
         .status-birahi { background: rgba(236,72,153,0.15); color: #f472b6; border: 1px solid rgba(236,72,153,0.3); }
-        .status-ib { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .status-ib { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
         .status-bunting { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .status-gagal { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
@@ -476,7 +476,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
     $status_class_map = [
         'Kosong'        => 'status-kosong',
         'Sudah Birahi'  => 'status-birahi',
-        'Sudah IB'      => 'status-ib',
+        'Sudah Inseminasi Buatan' => 'status-ib',
         'Bunting'       => 'status-bunting',
         'Gagal Hamil'   => 'status-gagal',
     ];
@@ -522,7 +522,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                 <h2>Sapi <?php echo htmlspecialchars($s['jenis']); ?></h2>
                 <p>ID Database: #<?php echo $s['id']; ?> &bull; Lahir: <?php echo tgl_indo($s['tanggal_lahir']); ?></p>
             </div>
-            <div class="inv-status-badge <?php echo $status_class; ?>"><?php echo strtoupper($status); ?></div>
+            <div class="inv-status-badge <?php echo $status_class; ?>"><?php echo strtoupper(str_replace('Sudah IB', 'Sudah Inseminasi Buatan', $status)); ?></div>
         </div>
     </div>
 
@@ -553,17 +553,17 @@ $exported_by = $current_user['nama'] ?? 'Admin';
             </div>
         </div>
 
-        <!-- IB & Monitoring -->
-        <div class="section-title">Monitoring Inseminasi & Kehamilan</div>
+        <!-- Inseminasi Buatan & Monitoring -->
+        <div class="section-title">Monitoring Inseminasi Buatan & Kehamilan</div>
         <div class="monitoring-grid">
             <div class="monitoring-box">
                 <div class="monitoring-icon" style="background:#eff6ff; color:#3b82f6;">
                     <i class="fas fa-syringe"></i>
                 </div>
                 <div>
-                    <div class="m-label">Tanggal IB (Inseminasi Buatan)</div>
+                    <div class="m-label">Tanggal Inseminasi Buatan</div>
                     <div class="m-value"><?php echo $s['tanggal_ib'] ? tgl_indo($s['tanggal_ib']) : 'Belum ada'; ?></div>
-                    <div class="m-note"><?php echo $s['tanggal_ib'] ? 'Inseminasi terakhir' : 'Sapi belum pernah di-IB'; ?></div>
+                    <div class="m-note"><?php echo $s['tanggal_ib'] ? 'Inseminasi Buatan terakhir' : 'Sapi belum pernah di-Inseminasi Buatan'; ?></div>
                 </div>
             </div>
             <div class="monitoring-box">
@@ -571,9 +571,9 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                     <i class="fas fa-stethoscope"></i>
                 </div>
                 <div>
-                    <div class="m-label">PKB (Pemeriksaan Kebuntingan)</div>
+                    <div class="m-label">Pemeriksaan Kebuntingan</div>
                     <div class="m-value"><?php echo $s['pkb'] ?? ($s['hpl'] ? 'Sudah Bunting' : ($s['tanggal_ib'] ? 'Perlu dicek' : '-')); ?></div>
-                    <div class="m-note"><?php echo $s['pkb'] ? 'Estimasi jadwal PKB (60 hari post-IB)' : ($s['hpl'] ? 'Sapi dikonfirmasi bunting' : 'Belum ada data IB'); ?></div>
+                    <div class="m-note"><?php echo $s['pkb'] ? 'Estimasi jadwal Pemeriksaan Kebuntingan (60 hari pasca Inseminasi Buatan)' : ($s['hpl'] ? 'Sapi dikonfirmasi bunting' : 'Belum ada data Inseminasi Buatan'); ?></div>
                 </div>
             </div>
             <div class="monitoring-box">
@@ -581,9 +581,9 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                     <i class="fas fa-child"></i>
                 </div>
                 <div>
-                    <div class="m-label">Estimasi HPL (Hari Perkiraan Lahir)</div>
-                    <div class="m-value"><?php echo $s['hpl'] ?? ($s['tanggal_ib'] && $status === 'Bunting' ? 'Hitung PKB dulu' : '-'); ?></div>
-                    <div class="m-note"><?php echo $s['hpl'] ? 'Estimasi kelahiran (283 hari post-IB)' : 'Belum bisa diprediksi'; ?></div>
+                    <div class="m-label">Hari Perkiraan Lahir</div>
+                    <div class="m-value"><?php echo $s['hpl'] ?? ($s['tanggal_ib'] && $status === 'Bunting' ? 'Hitung Pemeriksaan Kebuntingan dulu' : '-'); ?></div>
+                    <div class="m-note"><?php echo $s['hpl'] ? 'Estimasi kelahiran (283 hari pasca Inseminasi Buatan)' : 'Belum bisa diprediksi'; ?></div>
                 </div>
             </div>
             <div class="monitoring-box">
@@ -640,7 +640,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                     <td style="color:#94a3b8;font-size:11px;">
                         <?php
                             if ($bi === 0 && !empty($s['tanggal_ib'])) {
-                                echo 'Dilanjutkan IB pada ' . tgl_indo($s['tanggal_ib']);
+                                echo 'Dilanjutkan Inseminasi Buatan pada ' . tgl_indo($s['tanggal_ib']);
                             } elseif ($is_optimal) {
                                 echo 'Birahi terkini';
                             } else {
@@ -667,7 +667,49 @@ $exported_by = $current_user['nama'] ?? 'Admin';
             Dokumen ini digenerate otomatis oleh sistem CattlePro pada <strong><?php echo $print_date . ' pukul ' . $print_time; ?> WIB</strong> oleh <strong><?php echo htmlspecialchars($exported_by); ?></strong>.
             Total catatan birahi: <strong><?php echo $total_birahi; ?></strong> &bull;
             Siklus rata-rata: <strong><?php echo $avg_siklus !== '-' ? $avg_siklus . ' hari' : 'Belum dapat dihitung'; ?></strong> &bull;
-            Status reproduksi: <strong><?php echo $status; ?></strong>.
+            Status reproduksi: <strong><?php echo str_replace('Sudah IB', 'Sudah Inseminasi Buatan', $status); ?></strong>.
+        </div>
+    </div>
+
+    <!-- ===== TANDA TANGAN ===== -->
+    <?php
+        // Auto-migrasi kolom nip jika belum ada
+        try { $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama"); } catch(PDOException $e) {}
+
+        // Ambil data penandatangan
+        try {
+            $stmt_ttd = $db->prepare("SELECT nama, nip FROM users WHERE id = :id LIMIT 1");
+            $stmt_ttd->bindParam(':id', $_SESSION['user_id']);
+            $stmt_ttd->execute();
+            $ttd_user = $stmt_ttd->fetch(PDO::FETCH_ASSOC);
+            $ttd_nama = $ttd_user['nama'] ?? $exported_by;
+            $ttd_nip  = $ttd_user['nip'] ?? '';
+        } catch (PDOException $e) {
+            $ttd_nama = $exported_by;
+            $ttd_nip  = '';
+        }
+        $bulan_indo = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        $tgl_ttd = date('d') . ' ' . $bulan_indo[(int)date('n')] . ' ' . date('Y');
+        $kota = defined('APP_CITY') ? APP_CITY : '................';
+    ?>
+    <div style="page-break-inside: avoid; margin: 28px 0 8px 0; padding: 0 4px;">
+        <div style="display: flex; justify-content: flex-end;">
+            <div style="text-align: center; min-width: 220px; page-break-inside: avoid;">
+                <p style="font-size: 11px; color: #374151; margin: 0 0 4px 0;">
+                    <?php echo htmlspecialchars($kota); ?>, <?php echo $tgl_ttd; ?>
+                </p>
+                <p style="font-size: 11px; font-weight: 700; color: #1e293b; margin: 0 0 56px 0;">
+                    Kepala Peternakan,
+                </p>
+                <p style="font-size: 12px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0;">
+                    <?php echo htmlspecialchars($ttd_nama); ?>
+                </p>
+                <div style="border-bottom: 1.5px solid #374151; width: 200px; margin: 0 auto 6px auto;"></div>
+                <p style="font-size: 10px; color: #64748b; margin: 0; font-family: monospace;">
+                    NIP / NIK : <?php echo $ttd_nip ? htmlspecialchars($ttd_nip) : '______________________'; ?>
+                </p>
+            </div>
         </div>
     </div>
 

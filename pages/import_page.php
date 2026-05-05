@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
                 }
 
                 $sapi->status_reproduksi = $status_val;
+                $sapi->admin_id = (int)$_SESSION['user_id'];
 
                 try {
                     $new_id = $sapi->create();

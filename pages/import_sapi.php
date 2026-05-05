@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_csv'])) {
             $sapi->tanggal_lahir = $data[2];
             $sapi->berat = $data[3];
             $sapi->status_reproduksi = 'Kosong';
+            $sapi->admin_id = $_SESSION['user_id'];
 
             if ($sapi->create()) {
                 $success_count++;

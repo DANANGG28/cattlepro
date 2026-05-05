@@ -10,19 +10,32 @@ class Sapi {
     public $berat;
     public $status_reproduksi;
     public $tanggal_ib;
+    public $admin_id;
 
     public function __construct($db) {
         $this->conn = $db;
+        // Auto-migration: Tambah kolom admin_id jika belum ada
+        try {
+            $this->conn->exec("ALTER TABLE sapi ADD COLUMN admin_id INT NULL AFTER tanggal_ib");
+        } catch (PDOException $e) {
+            // Kolom mungkin sudah ada, abaikan error
+        }
     }
 
     // Read all sapi
     public function readAll() {
         $query = "SELECT s.*, 
-                    (SELECT u.nama FROM users u 
-                     JOIN log_aktivitas la ON u.id = la.user_id 
-                     WHERE la.deskripsi LIKE CONCAT('%', s.kode_sapi, '%') 
-                     ORDER BY la.created_at DESC LIMIT 1) as last_admin
-                  FROM " . $this->table . " s ORDER BY s.id DESC";
+                    COALESCE(u.nama, (SELECT u2.nama FROM users u2 
+                                     JOIN log_aktivitas la ON u2.id = la.user_id 
+                                     WHERE la.deskripsi LIKE CONCAT('%', s.kode_sapi, '%') 
+                                     ORDER BY la.created_at DESC LIMIT 1)) as last_admin,
+                    COALESCE(u.role, (SELECT u3.role FROM users u3 
+                                     JOIN log_aktivitas la2 ON u3.id = la2.user_id 
+                                     WHERE la2.deskripsi LIKE CONCAT('%', s.kode_sapi, '%') 
+                                     ORDER BY la2.created_at DESC LIMIT 1), 'ADMINISTRATOR') as admin_role
+                  FROM " . $this->table . " s 
+                  LEFT JOIN users u ON s.admin_id = u.id
+                  ORDER BY s.id DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;
@@ -39,7 +52,7 @@ class Sapi {
 
     // Create new sapi
     public function create() {
-        $query = "INSERT INTO " . $this->table . " (kode_sapi, jenis, tanggal_lahir, berat, status_reproduksi) VALUES (:kode_sapi, :jenis, :tanggal_lahir, :berat, :status_reproduksi)";
+        $query = "INSERT INTO " . $this->table . " (kode_sapi, jenis, tanggal_lahir, berat, status_reproduksi, admin_id) VALUES (:kode_sapi, :jenis, :tanggal_lahir, :berat, :status_reproduksi, :admin_id)";
         $stmt = $this->conn->prepare($query);
         
         $this->kode_sapi = htmlspecialchars(strip_tags($this->kode_sapi));
@@ -53,6 +66,7 @@ class Sapi {
         $stmt->bindParam(':tanggal_lahir', $this->tanggal_lahir);
         $stmt->bindParam(':berat', $this->berat);
         $stmt->bindParam(':status_reproduksi', $this->status_reproduksi);
+        $stmt->bindParam(':admin_id', $this->admin_id);
 
         if ($stmt->execute()) {
             return $this->conn->lastInsertId();
