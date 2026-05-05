@@ -211,7 +211,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td class="p-4 text-gray-500 text-[13px] search-target-sub"><?php echo htmlspecialchars($u['email']); ?></td>
                             <td class="p-4">
                                 <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold <?php echo $u['role'] == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
-                                    <?php echo ucfirst($u['role']); ?>
+                                    <?php echo $u['role'] == 'admin' ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
                                 </span>
                             </td>
                             <td class="p-4">
@@ -255,7 +255,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         </div>
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold <?php echo $u['role'] == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
-                            <?php echo ucfirst($u['role']); ?>
+                            <?php echo $u['role'] == 'admin' ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
                         </span>
                     </div>
 
@@ -313,9 +313,9 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Role</label>
-                <select name="role" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition bg-gray-50 focus:bg-white">
-                    <option value="admin">Admin</option>
-                    <option value="petugas">Petugas</option>
+                <select name="role" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-gray-50 focus:bg-white">
+                    <option value="admin">ADMINISTRATOR</option>
+                    <option value="petugas">PETUGAS LAPANGAN</option>
                 </select>
             </div>
             <div class="flex gap-3 pt-2">

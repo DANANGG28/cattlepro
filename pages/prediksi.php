@@ -190,11 +190,11 @@ foreach ($semua_sapi as $s) {
                                 </td>
                                 <td class="p-4 text-center">
                                     <div class="flex items-center justify-center gap-2">
+                                        <a href="detail_sapi.php?id=<?php echo $item['id']; ?>" class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 transition" title="Lihat Detail">
+                                            <i class="fas fa-stethoscope text-sm"></i>
+                                        </a>
                                         <a href="export_sapi.php?id=<?php echo $item['id']; ?>" target="_blank" class="w-9 h-9 rounded-full bg-red-50 text-red-600 inline-flex items-center justify-center hover:bg-red-100 transition" title="Export PDF">
                                             <i class="fas fa-file-pdf text-sm"></i>
-                                        </a>
-                                        <a href="detail_sapi.php?id=<?php echo $item['id']; ?>" class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 inline-flex items-center justify-center hover:bg-blue-100 hover:text-blue-700 transition" title="Lihat Detail">
-                                            <i class="fas fa-arrow-right text-sm"></i>
                                         </a>
                                     </div>
                                 </td>
@@ -255,11 +255,11 @@ foreach ($semua_sapi as $s) {
                         </div>
 
                         <div class="flex items-center gap-2 pt-2">
-                            <a href="export_sapi.php?id=<?php echo $item['id']; ?>" target="_blank" class="flex-1 bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2">
-                                <i class="fas fa-file-pdf"></i> Export Laporan
+                            <a href="detail_sapi.php?id=<?php echo $item['id']; ?>" class="flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-emerald-200">
+                                <i class="fas fa-stethoscope"></i> Detail Sapi
                             </a>
-                            <a href="detail_sapi.php?id=<?php echo $item['id']; ?>" class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
-                                <i class="fas fa-arrow-right"></i> Detail Sapi
+                            <a href="export_sapi.php?id=<?php echo $item['id']; ?>" target="_blank" class="flex-1 bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl text-xs text-center flex items-center justify-center gap-2 border border-red-100">
+                                <i class="fas fa-file-pdf"></i> Export Laporan
                             </a>
                         </div>
                     </div>
