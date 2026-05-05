@@ -1,8 +1,8 @@
 <?php
-require_once 'controllers/main.php';
+require_once '../controllers/main.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 
@@ -36,7 +36,7 @@ foreach ($semua_sapi as &$s) {
     if ($s['status_reproduksi'] === 'Bunting' && !empty($s['tanggal_ib'])) {
         $ib_date = new DateTime($s['tanggal_ib']);
         $ib_date->modify('+283 days');
-        $s['hpl'] = $ib_date->format('d M Y');
+        $s['hpl'] = tgl_indo($ib_date->format('Y-m-d'));
     }
 
     // PKB estimate (60 days from last IB)
@@ -44,12 +44,12 @@ foreach ($semua_sapi as &$s) {
     if ($s['status_reproduksi'] === 'Sudah IB' && !empty($s['tanggal_ib'])) {
         $ib_date = new DateTime($s['tanggal_ib']);
         $ib_date->modify('+60 days');
-        $s['pkb'] = $ib_date->format('d M Y');
+        $s['pkb'] = tgl_indo($ib_date->format('Y-m-d'));
     }
 }
 unset($s);
 
-$print_date = date('d F Y');
+$print_date = tgl_indo(date('Y-m-d'));
 $print_time = date('H:i');
 $company_name = "CattlePro Management System";
 $exported_by = $current_user['nama'] ?? 'Admin';
@@ -386,11 +386,64 @@ $exported_by = $current_user['nama'] ?? 'Admin';
             color: #cbd5e1;
         }
 
+        /* ========== RESPONSIVE SCREEN STYLES ========== */
+        @media screen and (max-width: 640px) {
+            .print-bar {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            .print-bar-brand { font-size: 14px; }
+            .print-bar-actions { width: 100%; justify-content: center; }
+            .btn-back, .btn-print { flex: 1; justify-content: center; padding: 10px; font-size: 12px; }
+
+            .paper-wrapper { padding: 12px; gap: 16px; }
+
+            .inv-header { padding: 24px 20px; }
+            .inv-header-top { flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+            .inv-doc-info { text-align: center; }
+            
+            .inv-sapi-headline { flex-direction: column; gap: 12px; text-align: center; }
+            .inv-status-badge { margin: 0; width: 100%; text-align: center; }
+            .inv-sapi-code { font-size: 20px; padding: 8px 20px; }
+
+            .inv-body { padding: 20px; }
+
+            .info-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .info-box { padding: 12px; }
+            .info-box-value { font-size: 13px; }
+
+            .monitoring-grid { grid-template-columns: 1fr; gap: 10px; }
+            
+            .timeline-table thead { display: none; }
+            .timeline-table tr { 
+                display: block; 
+                padding: 12px; 
+                border: 1px solid #f1f5f9; 
+                border-radius: 12px; 
+                margin-bottom: 8px; 
+                background: #f8fafc;
+            }
+            .timeline-table td { 
+                display: block; 
+                padding: 4px 0; 
+                text-align: left !important; 
+                border: none !important;
+            }
+            .timeline-table td.no { font-size: 10px; color: #94a3b8; }
+            .timeline-table td.interval::before { content: 'Interval: '; font-size: 10px; color: #94a3b8; font-weight: normal; }
+
+            .inv-footer { flex-direction: column; text-align: center; gap: 12px; padding: 20px; }
+            .inv-footer-center { order: -1; }
+            .inv-qr-note { text-align: center; }
+        }
+
         /* ========== PRINT STYLES ========== */
         @media print {
             body { background: white !important; }
             .print-bar { display: none !important; }
-            .paper-wrapper { padding: 0 !important; gap: 0 !important; max-width: 100% !important; }
+            .paper-wrapper { padding: 0 !important; gap: 0 !important; max-width: 100% !important; margin: 0 !important; }
             .invoice-card {
                 border-radius: 0 !important;
                 box-shadow: none !important;
@@ -411,7 +464,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
         <span>CattlePro &mdash; Export Data Sapi</span>
     </div>
     <div class="print-bar-actions">
-        <a href="sapi.php" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali</a>
+        <a href="prediksi.php" class="btn-back"><i class="fas fa-arrow-left"></i> Kembali</a>
         <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Cetak / Simpan PDF</button>
     </div>
 </div>
@@ -467,7 +520,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
             <div class="inv-sapi-code"><?php echo htmlspecialchars($s['kode_sapi']); ?></div>
             <div class="inv-sapi-meta">
                 <h2>Sapi <?php echo htmlspecialchars($s['jenis']); ?></h2>
-                <p>ID Database: #<?php echo $s['id']; ?> &bull; Lahir: <?php echo date('d M Y', strtotime($s['tanggal_lahir'])); ?></p>
+                <p>ID Database: #<?php echo $s['id']; ?> &bull; Lahir: <?php echo tgl_indo($s['tanggal_lahir']); ?></p>
             </div>
             <div class="inv-status-badge <?php echo $status_class; ?>"><?php echo strtoupper($status); ?></div>
         </div>
@@ -509,7 +562,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                 </div>
                 <div>
                     <div class="m-label">Tanggal IB (Inseminasi Buatan)</div>
-                    <div class="m-value"><?php echo $s['tanggal_ib'] ? date('d M Y', strtotime($s['tanggal_ib'])) : 'Belum ada'; ?></div>
+                    <div class="m-value"><?php echo $s['tanggal_ib'] ? tgl_indo($s['tanggal_ib']) : 'Belum ada'; ?></div>
                     <div class="m-note"><?php echo $s['tanggal_ib'] ? 'Inseminasi terakhir' : 'Sapi belum pernah di-IB'; ?></div>
                 </div>
             </div>
@@ -577,7 +630,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                 <tr>
                     <td class="no"><?php echo $bi + 1; ?></td>
                     <td class="date">
-                        <?php echo date('d M Y', strtotime($b['tanggal_birahi'])); ?>
+                        <?php echo tgl_indo($b['tanggal_birahi']); ?>
                         <?php if ($is_optimal): ?>
                             <span style="background:#dcfce7;color:#15803d;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:6px;letter-spacing:0.5px;">TERBARU</span>
                         <?php endif; ?>
@@ -587,7 +640,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                     <td style="color:#94a3b8;font-size:11px;">
                         <?php
                             if ($bi === 0 && !empty($s['tanggal_ib'])) {
-                                echo 'Dilanjutkan IB pada ' . date('d M Y', strtotime($s['tanggal_ib']));
+                                echo 'Dilanjutkan IB pada ' . tgl_indo($s['tanggal_ib']);
                             } elseif ($is_optimal) {
                                 echo 'Birahi terkini';
                             } else {

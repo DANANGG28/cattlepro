@@ -11,7 +11,7 @@ $success = '';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
+    header("Location: pages/dashboard.php");
     exit;
 }
 
@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_nama'] = $user['nama'];
         $_SESSION['user_role'] = $user['role'];
-        header("Location: dashboard.php");
+        header("Location: pages/dashboard.php");
         exit;
     } else {
         $error = "Email atau password salah.";
@@ -69,12 +69,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             </div>
             
             <h1 class="text-[42px] xl:text-[48px] font-extrabold text-white leading-[1.15] mb-5">
-                Kelola Peternakan <br>
+                Tracking Reproduksi <br>
                 <span class="text-[#00D084]">Lebih Cerdas & <br>Digital.</span>
             </h1>
 
             <p class="text-[#89A897] text-[16px] mb-14 leading-relaxed max-w-sm">
-                Pantau kesehatan ternak, analitik pertumbuhan, dan manajemen inventaris dalam satu platform terintegrasi.
+                Pantau siklus birahi, Inseminasi Buatan, hingga Hari Perkiraan Lahir sapi dalam satu platform manajemen cerdas.
             </p>
 
             <!-- Feature Card -->
