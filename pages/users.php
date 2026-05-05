@@ -11,10 +11,13 @@ if (!isset($current_user['role']) || $current_user['role'] !== 'admin') {
     exit;
 }
 
-// Auto-migrasi: tambah kolom nip jika belum ada
-try {
-    $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama");
-} catch (PDOException $e) { /* Kolom sudah ada, abaikan */ }
+// Auto-migrasi: tambah kolom nip jika belum ada (hanya sekali per sesi)
+if (!isset($_SESSION['_migration_nip_done'])) {
+    try {
+        $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama");
+    } catch (PDOException $e) { /* Kolom sudah ada, abaikan */ }
+    $_SESSION['_migration_nip_done'] = true;
+}
 
 $pesan = '';
 $error = '';

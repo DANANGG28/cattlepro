@@ -65,9 +65,9 @@ function send_wa($target, $pesan, $delay = 0) {
       CURLOPT_URL => 'https://api.fonnte.com/send',
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_ENCODING => '',
-      CURLOPT_MAXREDIRS => 10,
-      CURLOPT_TIMEOUT => 5,
-      CURLOPT_CONNECTTIMEOUT => 5,
+      CURLOPT_MAXREDIRS => 2,
+      CURLOPT_TIMEOUT => 3,
+      CURLOPT_CONNECTTIMEOUT => 2,
       CURLOPT_FOLLOWLOCATION => true,
       CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
       CURLOPT_CUSTOMREQUEST => 'POST',
@@ -93,7 +93,8 @@ function send_telegram($pesan) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
     // Bypass SSL (Penting untuk server lokal agar tidak error)
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
     

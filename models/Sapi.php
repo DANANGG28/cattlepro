@@ -14,25 +14,22 @@ class Sapi {
 
     public function __construct($db) {
         $this->conn = $db;
-        // Auto-migration: Tambah kolom admin_id jika belum ada
-        try {
-            $this->conn->exec("ALTER TABLE sapi ADD COLUMN admin_id INT NULL AFTER tanggal_ib");
-        } catch (PDOException $e) {
-            // Kolom mungkin sudah ada, abaikan error
+        // Auto-migration hanya sekali via session flag
+        if (!isset($_SESSION['_migration_sapi_done'])) {
+            try {
+                $this->conn->exec("ALTER TABLE sapi ADD COLUMN admin_id INT NULL AFTER tanggal_ib");
+            } catch (PDOException $e) {
+                // Kolom sudah ada, abaikan
+            }
+            $_SESSION['_migration_sapi_done'] = true;
         }
     }
 
-    // Read all sapi
+    // Read all sapi (optimized: single JOIN, no correlated subqueries)
     public function readAll() {
         $query = "SELECT s.*, 
-                    COALESCE(u.nama, (SELECT u2.nama FROM users u2 
-                                     JOIN log_aktivitas la ON u2.id = la.user_id 
-                                     WHERE la.deskripsi LIKE CONCAT('%', s.kode_sapi, '%') 
-                                     ORDER BY la.created_at DESC LIMIT 1)) as last_admin,
-                    COALESCE(u.role, (SELECT u3.role FROM users u3 
-                                     JOIN log_aktivitas la2 ON u3.id = la2.user_id 
-                                     WHERE la2.deskripsi LIKE CONCAT('%', s.kode_sapi, '%') 
-                                     ORDER BY la2.created_at DESC LIMIT 1), 'ADMINISTRATOR') as admin_role
+                    u.nama as last_admin,
+                    COALESCE(u.role, 'admin') as admin_role
                   FROM " . $this->table . " s 
                   LEFT JOIN users u ON s.admin_id = u.id
                   ORDER BY s.id DESC";
@@ -208,43 +205,24 @@ class Sapi {
         return $stmt;
     }
 
-    // Get combined history by sapi ID
+    // Get combined history by sapi ID (optimized with UNION + LIMIT)
     public function getHistoryBySapi($id) {
         $data = $this->getById($id);
         if (!$data) return [];
         $kode = '%' . $data['kode_sapi'] . '%';
 
-        // 1. Fetch from log_aktivitas (matching kode_sapi in deskripsi)
-        $query_log = "SELECT created_at, jenis_aktivitas as jenis, deskripsi FROM log_aktivitas WHERE deskripsi LIKE :kode";
-        $stmt_log = $this->conn->prepare($query_log);
-        $stmt_log->bindParam(':kode', $kode);
-        $stmt_log->execute();
-        $logs = $stmt_log->fetchAll(PDO::FETCH_ASSOC);
+        // Gabung log + birahi dalam 1 query UNION, langsung sorted oleh MySQL
+        $query = "(SELECT created_at, jenis_aktivitas as jenis, deskripsi FROM log_aktivitas WHERE deskripsi LIKE :kode ORDER BY created_at DESC LIMIT 50)
+                  UNION ALL
+                  (SELECT tanggal_birahi as created_at, 'birahi_record' as jenis, 'Data birahi dicatat ke dalam database' as deskripsi FROM birahi WHERE id_sapi = :id ORDER BY tanggal_birahi DESC LIMIT 50)
+                  ORDER BY created_at DESC
+                  LIMIT 30";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':kode', $kode);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
 
-        // 2. Fetch from birahi table
-        $query_birahi = "SELECT tanggal_birahi as created_at, 'birahi_record' as jenis, 'Data birahi dicatat ke dalam database' as deskripsi FROM birahi WHERE id_sapi = :id";
-        $stmt_birahi = $this->conn->prepare($query_birahi);
-        $stmt_birahi->bindParam(':id', $id);
-        $stmt_birahi->execute();
-        $birahis = $stmt_birahi->fetchAll(PDO::FETCH_ASSOC);
-
-        // 3. Combine and Sort by created_at DESC
-        $logs = is_array($logs) ? $logs : [];
-        $birahis = is_array($birahis) ? $birahis : [];
-        
-        $history = array_merge($logs, $birahis);
-        
-        if (is_array($history)) {
-            usort($history, function($a, $b) {
-                $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
-                $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
-                return ($timeB ?: 0) <=> ($timeA ?: 0);
-            });
-        } else {
-            $history = [];
-        }
-
-        return $history;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // --- Prediction Methods ---

@@ -18,6 +18,16 @@ $count_gagal_hamil = 0;
 
 $notifikasi = [];
 
+// Batch fetch: ambil semua latest birahi sekaligus (1 query, bukan N)
+$stmt_birahi_all = $db->prepare("SELECT b1.* FROM birahi b1 
+    INNER JOIN (SELECT id_sapi, MAX(tanggal_birahi) as max_tgl FROM birahi GROUP BY id_sapi) b2 
+    ON b1.id_sapi = b2.id_sapi AND b1.tanggal_birahi = b2.max_tgl");
+$stmt_birahi_all->execute();
+$all_latest_birahi = [];
+foreach ($stmt_birahi_all->fetchAll(PDO::FETCH_ASSOC) as $b) {
+    $all_latest_birahi[$b['id_sapi']] = $b;
+}
+
 // Loop untuk kalkulasi stats dan generate alert notifikasi
 foreach($semua_sapi as $key => $s) {
     $status = isset($s['status_reproduksi']) ? $s['status_reproduksi'] : 'Kosong';
@@ -32,7 +42,7 @@ foreach($semua_sapi as $key => $s) {
         $count_gagal_hamil++;
     } elseif ($status == 'Sudah Birahi') {
         $count_birahi++;
-        $latest = $sapi->getLatestBirahi($s['id']);
+        $latest = $all_latest_birahi[$s['id']] ?? null;
         if ($latest) {
              $semua_sapi[$key]['last_update_text'] = 'Birahi';
              $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($latest['tanggal_birahi']));
@@ -103,7 +113,8 @@ $recent_sapi_table = array_slice($semua_sapi, 0, 5);
 
 // Get recent activities for the timeline log
 $recentActivities = $sapi->getRecentActivities(5)->fetchAll(PDO::FETCH_ASSOC);
-$allActivities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
+// Lazy load: allActivities akan di-load saat modal dibuka (lihat inline di bawah)
+$allActivities = null;
 
 // Activity Visualization Config
 $activity_config = [
@@ -449,7 +460,10 @@ $activity_config = [
         <!-- Content -->
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
             <div class="relative border-l-2 border-gray-100 ml-3 space-y-8" id="modalActivityList">
-                <?php foreach ($allActivities as $act): 
+                <?php 
+                // Lazy load: hanya query saat halaman sudah di-render
+                $allActivities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($allActivities as $act): 
                     $cfg = $activity_config[$act['jenis_aktivitas']] ?? [
                         'icon' => 'fas fa-info-circle',
                         'bg' => 'bg-gray-100',

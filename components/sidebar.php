@@ -2,7 +2,7 @@
 // Sidebar Component
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Font Awesome sudah di-load di head setiap halaman -->
 <style>
     #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     
