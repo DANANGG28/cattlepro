@@ -17,7 +17,7 @@
             <p class="text-sm font-bold text-gray-800"><?php echo isset($current_user['nama']) ? htmlspecialchars($current_user['nama']) : 'Super Admin'; ?></p>
             <p class="text-xs text-gray-400"><?php echo isset($current_user['email']) ? htmlspecialchars($current_user['email']) : ''; ?></p>
         </div>
-        <a href="logout.php" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition">
+        <a href="<?php echo $link_prefix ?? ''; ?>logout.php" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition">
             <i class="fas fa-sign-out-alt"></i>
             <span class="font-medium">Logout</span>
         </a>

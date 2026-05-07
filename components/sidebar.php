@@ -46,17 +46,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
         <p class="text-[10px] uppercase text-[#8ba99a] font-bold tracking-widest mb-3 ml-2">Menu Utama</p>
         
-        <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'dashboard.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'dashboard.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
             <i class="fas fa-chart-pie text-lg w-6 text-center"></i>
             <span class="font-bold">Dashboard</span>
         </a>
 
-        <a href="sapi.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'sapi.php' || $current_page == 'detail_sapi.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>sapi.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'sapi.php' || $current_page == 'detail_sapi.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
             <i class="fas fa-cow text-lg w-6 text-center"></i>
             <span class="font-bold">Data Sapi</span>
         </a>
 
-        <a href="prediksi.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'prediksi.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>prediksi.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'prediksi.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
             <i class="fas fa-stethoscope text-lg w-6 text-center"></i>
             <span class="font-bold">Pemeriksaan</span>
         </a>
@@ -64,12 +64,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <?php if(isset($current_user['role']) && strtolower($current_user['role']) === 'admin'): ?>
         <p class="text-[10px] uppercase text-[#8ba99a] font-bold tracking-widest mb-3 ml-2 mt-6">Sistem</p>
 
-        <a href="users.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'users.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>users.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'users.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
             <i class="fas fa-users-cog text-lg w-6 text-center"></i>
             <span class="font-bold">Manajemen User</span>
         </a>
 
-        <a href="aktivitas.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'aktivitas.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>aktivitas.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'aktivitas.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
             <i class="fas fa-history text-lg w-6 text-center"></i>
             <span class="font-bold">Log Aktivitas</span>
         </a>
@@ -78,7 +78,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <!-- Footer -->
     <div class="p-5">
-        <a href="logout.php" class="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#142e23] border border-[#224536] text-[#fc8181] hover:bg-[#1d4030] transition-all duration-200 group">
+        <a href="<?php echo $link_prefix ?? ''; ?>logout.php" class="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#142e23] border border-[#224536] text-[#fc8181] hover:bg-[#1d4030] transition-all duration-200 group">
             <i class="fas fa-sign-out-alt text-lg group-hover:text-[#ff9e9e]"></i>
             <span class="font-bold text-[13px]">Keluar Sistem</span>
         </a>
@@ -88,20 +88,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <!-- Mobile Bottom Navigation -->
 <nav class="mobile-bottom-nav fixed bottom-0 left-0 right-0 bg-[#0A3622] border-t border-[#144834] z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.25)]" style="display:none;">
     <div class="flex justify-between items-center max-w-lg mx-auto px-8 py-3">
-        <a href="dashboard.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'dashboard.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>dashboard.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'dashboard.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
             <i class="fas fa-chart-pie text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Home</span>
         </a>
-        <a href="sapi.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'sapi.php' || $current_page == 'detail_sapi.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>sapi.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'sapi.php' || $current_page == 'detail_sapi.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
             <i class="fas fa-cow text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Sapi</span>
         </a>
-        <a href="prediksi.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'prediksi.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>prediksi.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'prediksi.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
             <i class="fas fa-stethoscope text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Periksa</span>
         </a>
         <?php if(isset($current_user['role']) && strtolower($current_user['role']) === 'admin'): ?>
-        <a href="users.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'users.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
+        <a href="<?php echo $link_prefix ?? ''; ?>users.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'users.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
             <i class="fas fa-users-cog text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Users</span>
         </a>

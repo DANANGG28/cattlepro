@@ -700,7 +700,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                     <?php echo htmlspecialchars($kota); ?>, <?php echo $tgl_ttd; ?>
                 </p>
                 <p style="font-size: 11px; font-weight: 700; color: #1e293b; margin: 0 0 56px 0;">
-                    Kepala Peternakan,
+                    Petugas Peternakan,
                 </p>
                 <p style="font-size: 12px; font-weight: 800; color: #1e293b; margin: 0 0 4px 0;">
                     <?php echo htmlspecialchars($ttd_nama); ?>

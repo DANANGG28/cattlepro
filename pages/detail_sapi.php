@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $waktu_ib_text = tgl_indo(date('Y-m-d H:i:s', $waktu_ib), true);
         
         $kode_sapi = $data_sapi['kode_sapi'];
-        $nomor_tujuan = '085176984188';
+        $nomor_tujuan = '081339828533';
         
         $pesan_wa = "✅ *Pencatatan Birahi Berhasil!*\n";
         $pesan_wa .= "Sapi *{$kode_sapi}* telah tercatat.\n\n";
@@ -90,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sapi->logActivity($_SESSION['user_id'], 'inseminasi', "Melakukan IB pada sapi: {$data_sapi['kode_sapi']}");
         
         // ---- Trigger WA & Tele: Inseminasi ----
-        $nomor_tujuan = '085176984188';
+        $nomor_tujuan = '081339828533';
         
         $waktu_ib_ts = strtotime($tgl_ib);
         $tgl_pantau = date('Y-m-d', $waktu_ib_ts + (21 * 24 * 3600));
@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['simpan_pkb'])) {
         $hasil = $_POST['hasil_pkb'];
         $kode_sapi = $data_sapi['kode_sapi'];
-        $nomor_tujuan = '081234567890'; // TODO: Sesuaikan
+        $nomor_tujuan = '081339828533';
 
         if ($hasil == 'Bunting') {
             $sapi->updateStatusReproduksi($id_sapi, 'Bunting');
@@ -159,7 +159,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         $sapi->logActivity($_SESSION['user_id'], 'pkb', "Pemeriksaan Kebuntingan {$data_sapi['kode_sapi']}: $hasil");
         
-        $nomor_tujuan = '085176984188';
+        $nomor_tujuan = '081339828533';
         
         // Kirim konfirmasi sekarang (WhatsApp)
         $pesan_wa = str_replace(['<b>', '</b>'], ['*', '*'], $pesan_tele);
@@ -184,7 +184,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // ---- Trigger WA & Tele: Kelahiran ----
         $kode_sapi = $data_sapi['kode_sapi'];
-        $nomor_tujuan = '085176984188';
+        $nomor_tujuan = '081339828533';
         
         $pesan_tele = "🍼 <b>Kelahiran Tercatat!</b>\n";
         $pesan_tele .= "Indukan <b>{$kode_sapi}</b> telah melahirkan.\n\n";

@@ -44,6 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     <title>Login - CattlePro Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
@@ -60,10 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             <!-- Logo -->
             <div class="flex items-center gap-3.5 mb-12">
                 <div class="bg-white shadow-xl shadow-black/10 w-[54px] h-[54px] rounded-[16px] flex items-center justify-center">
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" class="text-[#093320]" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12.5 4c-3.5 0-6.5 3-6.5 6.5s3 6.5 6.5 6.5 6.5-6.5 2-9-2-4-5.5-4z"/>
-                      <circle cx="10" cy="13" r="1.5" fill="currentColor"/>
-                    </svg>
+                    <i class="fa-solid fa-cow text-[#093320] text-2xl"></i>
                 </div>
                 <span class="text-white text-[28px] font-extrabold tracking-tight">CattlePro</span>
             </div>
@@ -123,7 +121,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-[13px] font-extrabold text-[#1E293B]">Password</label>
-                        <a href="#" class="text-[13px] font-bold text-[#00A166] hover:text-[#008A56] transition-colors">Lupa Password?</a>
+                        <a href="pages/forgot-password.php" class="text-[13px] font-bold text-[#00A166] hover:text-[#008A56] transition-colors">Lupa Password?</a>
                     </div>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]">
