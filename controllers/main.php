@@ -46,8 +46,7 @@ if (isset($_SESSION['user_id'])) {
 
 // Helper function to send WhatsApp via Fonnte (dengan dukungan Schedule)
 function send_wa($target, $pesan, $delay = 0) {
-    // TODO: Ganti dengan Token Fonnte milik Anda
-    $token = 'iX6uoWbbp766SGtiAQk3'; 
+    $token = 'vtNwipSD1LeixshYcQ6U';
     
     $curl = curl_init();
     $data = array(
@@ -66,8 +65,8 @@ function send_wa($target, $pesan, $delay = 0) {
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_ENCODING => '',
       CURLOPT_MAXREDIRS => 2,
-      CURLOPT_TIMEOUT => 3,
-      CURLOPT_CONNECTTIMEOUT => 2,
+      CURLOPT_TIMEOUT => 10,
+      CURLOPT_CONNECTTIMEOUT => 5,
       CURLOPT_FOLLOWLOCATION => true,
       CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
       CURLOPT_CUSTOMREQUEST => 'POST',
@@ -79,7 +78,20 @@ function send_wa($target, $pesan, $delay = 0) {
     ));
 
     $response = curl_exec($curl);
+    $curl_error = curl_error($curl);
+    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     curl_close($curl);
+
+    // Log respons ke file untuk debugging
+    $log_dir = __DIR__ . '/../logs';
+    if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
+    $log_msg = '[' . date('Y-m-d H:i:s') . '] target=' . $target 
+             . ' delay=' . $delay 
+             . ' http=' . $http_code 
+             . ' curl_err=' . ($curl_error ?: '-') 
+             . ' response=' . $response . PHP_EOL;
+    file_put_contents($log_dir . '/wa.log', $log_msg, FILE_APPEND);
+
     return $response;
 }
 

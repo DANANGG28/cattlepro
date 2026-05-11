@@ -1,0 +1,47 @@
+======================================================
+         PANDUAN PENGGUNAAN APLIKASI CATTLEPRO
+======================================================
+
+1. PENDAHULUAN
+CattlePro adalah sistem manajemen dan monitoring reproduksi sapi berbasis digital. Aplikasi ini membantu peternak mengelola siklus reproduksi dari tahap birahi hingga kelahiran secara terintegrasi.
+
+2. FITUR UTAMA & CARA PENGGUNAAN
+
+A. Login dan Pemulihan Akun
+- Akses halaman login dan masukkan email & password.
+- Gunakan fitur "Lupa Password" jika Anda kehilangan akses akun untuk menerima instruksi pemulihan via email.
+
+B. Dashboard & Notifikasi Cerdas
+- Dashboard memberikan ringkasan populasi (Total Sapi, Birahi, Bunting, dll).
+- Sistem Notifikasi Otomatis akan muncul di Dashboard untuk memberikan instruksi kritis:
+  * Pengingat IB: Muncul saat sapi dalam masa birahi optimal (Sisa jam masa subur).
+  * Jadwal PKB: Muncul H-15 sebelum jadwal Pemeriksaan Kebuntingan.
+  * Estimasi Kelahiran: Muncul H-30 sebelum Hari Perkiraan Lahir (HPL).
+
+C. Siklus Pencatatan Reproduksi (Smart Cycle)
+Pencatatan dilakukan secara bertahap melalui halaman "Detail Sapi" dengan alur berikut:
+1. Tahap KOSONG: Sapi dalam pengawasan normal. Jika terlihat gejala birahi, klik "Simpan Birahi".
+2. Tahap SUDAH BIRAHI: Sistem akan menampilkan jadwal optimal Inseminasi Buatan (IB) (H+12 jam). Klik "Simpan Data IB" setelah tindakan dilakukan.
+3. Tahap SUDAH IB: Sistem menjadwalkan Pantau Birahi Ulang (H+21) dan Cek Kebuntingan (H+60). Masukkan hasil cek melalui menu "Pemeriksaan Kebuntingan (PKB)".
+4. Tahap BUNTING: Jika hasil PKB positif, sistem menghitung estimasi kelahiran (HPL) yaitu 283 hari sejak IB.
+5. Tahap KELAHIRAN: Setelah sapi melahirkan, klik "Laporkan Kelahiran" untuk mereset status sapi kembali ke "Kosong" dan memulai siklus baru.
+6. GAGAL HAMIL: Jika PKB negatif atau terjadi keguguran, status diubah ke "Gagal Hamil" untuk evaluasi medis sebelum di-reset.
+
+D. Integrasi Notifikasi Eksternal (WA & Telegram)
+Setiap kali Anda melakukan pencatatan (Birahi, IB, PKB, Kelahiran), sistem secara otomatis mengirimkan:
+- Pesan Konfirmasi: Bukti data telah tersimpan di server.
+- Instruksi Jadwal: Jadwal kapan harus melakukan IB atau PKB berikutnya.
+- Pengingat Otomatis: Pesan pengingat yang dikirim tepat pada hari jadwal tindakan (misal: pengingat H+21 untuk pantau birahi ulang).
+
+E. Log Aktivitas & Riwayat
+- Aktivitas Terbaru: Dapat dilihat di Dashboard untuk memantau siapa (Admin/Petugas) yang melakukan perubahan data.
+- Riwayat Reproduksi: Timeline lengkap perjalanan reproduksi setiap sapi tersedia di bagian bawah halaman "Detail Sapi".
+
+3. TROUBLESHOOTING UMUM
+- Link Tidak Bisa Diklik: Pastikan Anda memiliki hak akses (Admin/Petugas). Beberapa menu seperti "Manajemen User" hanya untuk Admin.
+- Data Tidak Berubah: Segera hubungi IT Support jika setelah klik "Simpan" data tidak terupdate di Timeline.
+- Notifikasi WA Tidak Masuk: Pastikan nomor target sudah terdaftar di sistem integrasi API (Fonnte).
+
+======================================================
+Dokumen ini diperbarui untuk mencakup detail Siklus Reproduksi dan Sistem Notifikasi.
+======================================================

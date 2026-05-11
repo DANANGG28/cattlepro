@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['simpan_pkb'])) {
         $hasil = $_POST['hasil_pkb'];
         $kode_sapi = $data_sapi['kode_sapi'];
-        $nomor_tujuan = '081234567890'; // TODO: Sesuaikan
+        $nomor_tujuan = '085176984188';
 
         if ($hasil == 'Bunting') {
             $sapi->updateStatusReproduksi($id_sapi, 'Bunting');

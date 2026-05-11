@@ -123,7 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-[13px] font-extrabold text-[#1E293B]">Password</label>
-                        <a href="#" class="text-[13px] font-bold text-[#00A166] hover:text-[#008A56] transition-colors">Lupa Password?</a>
+                        <a href="forgot_password.php" class="text-[13px] font-bold text-[#00A166] hover:text-[#008A56] transition-colors">Lupa Password?</a>
                     </div>
                     <div class="relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]">
