@@ -1,2 +1,5 @@
 cattlepro-93c0b-firebase-adminsdk-fbsvc-cf6c373fee.json
 *.json:Zone.Identifier
+
+echo "cattlepro-93c0b-firebase-adminsdk-fbsvc-cf6c373fee.json" >> .gitignore
+echo "*.json:Zone.Identifier" >> .gitignore
