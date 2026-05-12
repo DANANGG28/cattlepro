@@ -1,7 +1,6 @@
 <?php
 class Sapi {
     private $conn;
-    private $table = "sapi";
 
     public $id;
     public $kode_sapi;
@@ -14,310 +13,432 @@ class Sapi {
 
     public function __construct($db) {
         $this->conn = $db;
-        // Auto-migration hanya sekali via session flag
-        if (!isset($_SESSION['_migration_sapi_done'])) {
-            try {
-                $this->conn->exec("ALTER TABLE sapi ADD COLUMN admin_id INT NULL AFTER tanggal_ib");
-            } catch (PDOException $e) {
-                // Kolom sudah ada, abaikan
-            }
-            $_SESSION['_migration_sapi_done'] = true;
-        }
     }
 
-    // Read all sapi (optimized: single JOIN, no correlated subqueries)
-    public function readAll() {
-        $query = "SELECT s.*, 
-                    u.nama as last_admin,
-                    COALESCE(u.role, 'admin') as admin_role
-                  FROM " . $this->table . " s 
-                  LEFT JOIN users u ON s.admin_id = u.id
-                  ORDER BY s.id DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    // Get by ID
-    public function getById($id) {
-        $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    // Create new sapi
-    public function create() {
-        $query = "INSERT INTO " . $this->table . " (kode_sapi, jenis, tanggal_lahir, berat, status_reproduksi, admin_id) VALUES (:kode_sapi, :jenis, :tanggal_lahir, :berat, :status_reproduksi, :admin_id)";
-        $stmt = $this->conn->prepare($query);
-        
-        $this->kode_sapi = htmlspecialchars(strip_tags($this->kode_sapi));
-        $this->jenis = htmlspecialchars(strip_tags($this->jenis));
-        $this->tanggal_lahir = htmlspecialchars(strip_tags($this->tanggal_lahir));
-        $this->berat = htmlspecialchars(strip_tags($this->berat));
-        $this->status_reproduksi = $this->status_reproduksi ?: 'Kosong';
-
-        $stmt->bindParam(':kode_sapi', $this->kode_sapi);
-        $stmt->bindParam(':jenis', $this->jenis);
-        $stmt->bindParam(':tanggal_lahir', $this->tanggal_lahir);
-        $stmt->bindParam(':berat', $this->berat);
-        $stmt->bindParam(':status_reproduksi', $this->status_reproduksi);
-        $stmt->bindParam(':admin_id', $this->admin_id);
-
-        if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        }
-        return false;
-    }
-
-    // Update sapi
-    public function update() {
-        $query = "UPDATE " . $this->table . " SET kode_sapi = :kode_sapi, jenis = :jenis, tanggal_lahir = :tanggal_lahir, berat = :berat WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-
-        $this->kode_sapi = htmlspecialchars(strip_tags($this->kode_sapi));
-        $this->jenis = htmlspecialchars(strip_tags($this->jenis));
-        $this->tanggal_lahir = htmlspecialchars(strip_tags($this->tanggal_lahir));
-        $this->berat = htmlspecialchars(strip_tags($this->berat));
-
-        $stmt->bindParam(':kode_sapi', $this->kode_sapi);
-        $stmt->bindParam(':jenis', $this->jenis);
-        $stmt->bindParam(':tanggal_lahir', $this->tanggal_lahir);
-        $stmt->bindParam(':berat', $this->berat);
-        $stmt->bindParam(':id', $this->id);
-
-        return $stmt->execute();
-    }
-
-    // Delete sapi
-    public function delete($id) {
-        // Delete related birahi records first
-        $query = "DELETE FROM birahi WHERE id_sapi = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-
-        // Delete related log_aktivitas
-        $query = "DELETE FROM log_aktivitas WHERE deskripsi LIKE :kode";
-        $stmt = $this->conn->prepare($query);
-        $data = $this->getById($id);
-        if ($data) {
-            $kode = '%' . $data['kode_sapi'] . '%';
-            $stmt->bindParam(':kode', $kode);
-            $stmt->execute();
-        }
-
-        // Delete sapi
-        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
-    }
-
-    // Update status reproduksi
-    public function updateStatusReproduksi($id, $status) {
-        $query = "UPDATE " . $this->table . " SET status_reproduksi = :status WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
-    }
-
-    // Set tanggal IB
-    public function setTanggalIB($id, $tanggal) {
-        $query = "UPDATE " . $this->table . " SET tanggal_ib = :tanggal WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':tanggal', $tanggal);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
-    }
-
-    // --- Birahi Methods ---
-
-    // Create birahi record
-    public function createBirahi($id_sapi, $tanggal_birahi) {
-        $query = "INSERT INTO birahi (id_sapi, tanggal_birahi) VALUES (:id_sapi, :tanggal_birahi)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id_sapi', $id_sapi);
-        $stmt->bindParam(':tanggal_birahi', $tanggal_birahi);
-        return $stmt->execute();
-    }
-
-    // Get birahi by sapi ID
-    public function getBirahiByIdSapi($id_sapi) {
-        $query = "SELECT * FROM birahi WHERE id_sapi = :id_sapi ORDER BY tanggal_birahi DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id_sapi', $id_sapi);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    // Get latest birahi
-    public function getLatestBirahi($id_sapi) {
-        $query = "SELECT * FROM birahi WHERE id_sapi = :id_sapi ORDER BY tanggal_birahi DESC LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id_sapi', $id_sapi);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    // Delete birahi
-    public function deleteBirahi($id) {
-        $query = "DELETE FROM birahi WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        return $stmt->execute();
-    }
-
-    // --- Activity Log Methods ---
-
-    // Log activity
-    public function logActivity($user_id, $jenis_aktivitas, $deskripsi) {
-        $query = "INSERT INTO log_aktivitas (user_id, jenis_aktivitas, deskripsi) VALUES (:user_id, :jenis_aktivitas, :deskripsi)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':jenis_aktivitas', $jenis_aktivitas);
-        $stmt->bindParam(':deskripsi', $deskripsi);
-        return $stmt->execute();
-    }
-
-    public function getRecentActivities($limit = 8) {
-        $query = "SELECT la.*, u.nama, u.role 
-                  FROM log_aktivitas la 
-                  JOIN users u ON la.user_id = u.id 
-                  ORDER BY la.created_at DESC 
-                  LIMIT :limit";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    // Get all activities
-    public function getAllActivities() {
-        $query = "SELECT la.*, u.nama, u.role 
-                  FROM log_aktivitas la 
-                  JOIN users u ON la.user_id = u.id 
-                  ORDER BY la.created_at DESC";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-
-    // Get combined history by sapi ID (optimized with UNION + LIMIT)
-    public function getHistoryBySapi($id) {
-        $data = $this->getById($id);
-        if (!$data) return [];
-        $kode = '%' . $data['kode_sapi'] . '%';
-
-        // Gabung log + birahi dalam 1 query UNION, langsung sorted oleh MySQL
-        $query = "(SELECT created_at, jenis_aktivitas as jenis, deskripsi FROM log_aktivitas WHERE deskripsi LIKE :kode ORDER BY created_at DESC LIMIT 50)
-                  UNION ALL
-                  (SELECT tanggal_birahi as created_at, 'birahi_record' as jenis, 'Data birahi dicatat ke dalam database' as deskripsi FROM birahi WHERE id_sapi = :id ORDER BY tanggal_birahi DESC LIMIT 50)
-                  ORDER BY created_at DESC
-                  LIMIT 30";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':kode', $kode);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    // --- Prediction Methods ---
-
-    // Calculate reproduction prediction score
-    public function hitungPrediksi($id_sapi) {
-        $data = $this->getById($id_sapi);
+    /**
+     * Helper untuk memetakan data Firebase ke format array CattlePro lama
+     */
+    private function mapData($data) {
         if (!$data) return null;
-
-        // Skor Umur (max 40)
-        $tanggal_lahir = new DateTime($data['tanggal_lahir']);
-        $sekarang = new DateTime();
-        $umur_bulan = ($sekarang->diff($tanggal_lahir)->y * 12) + $sekarang->diff($tanggal_lahir)->m;
-        
-        $skor_umur = 0;
-        if ($umur_bulan >= 15 && $umur_bulan <= 18) {
-            $skor_umur = 40;
-        } elseif ($umur_bulan >= 12 && $umur_bulan < 15) {
-            $skor_umur = 30;
-        } elseif ($umur_bulan > 18 && $umur_bulan <= 24) {
-            $skor_umur = 35;
-        } elseif ($umur_bulan > 24 && $umur_bulan <= 36) {
-            $skor_umur = 25;
-        } elseif ($umur_bulan > 36) {
-            $skor_umur = 15;
-        } else {
-            $skor_umur = 10;
-        }
-
-        // Skor Berat (max 30)
-        $berat = floatval($data['berat']);
-        $skor_berat = 0;
-        if ($berat >= 300 && $berat <= 400) {
-            $skor_berat = 30;
-        } elseif ($berat >= 250 && $berat < 300) {
-            $skor_berat = 20;
-        } elseif ($berat > 400 && $berat <= 500) {
-            $skor_berat = 25;
-        } elseif ($berat > 500) {
-            $skor_berat = 15;
-        } else {
-            $skor_berat = 10;
-        }
-
-        // Skor Birahi (max 30)
-        $birahi_data = $this->getBirahiByIdSapi($id_sapi)->fetchAll(PDO::FETCH_ASSOC);
-        $skor_birahi = 0;
-        if (count($birahi_data) >= 3) {
-            // Calculate average interval
-            $intervals = [];
-            for ($i = 0; $i < count($birahi_data) - 1; $i++) {
-                $d1 = new DateTime($birahi_data[$i]['tanggal_birahi']);
-                $d2 = new DateTime($birahi_data[$i + 1]['tanggal_birahi']);
-                $intervals[] = abs($d1->diff($d2)->days);
-            }
-            $avg_interval = array_sum($intervals) / count($intervals);
-            
-            if ($avg_interval >= 18 && $avg_interval <= 24) {
-                $skor_birahi = 30; // Ideal 21 days cycle
-            } elseif ($avg_interval >= 15 && $avg_interval < 18) {
-                $skor_birahi = 20;
-            } elseif ($avg_interval > 24 && $avg_interval <= 30) {
-                $skor_birahi = 20;
-            } else {
-                $skor_birahi = 10;
-            }
-        } elseif (count($birahi_data) >= 1) {
-            $skor_birahi = 15;
-        } else {
-            $skor_birahi = 5;
-        }
-
-        $total_skor = $skor_umur + $skor_berat + $skor_birahi;
-        $hasil_status = $total_skor >= 60 ? 'SIAP REPRODUKSI' : 'BELUM OPTIMAL';
-
         return [
-            'skor_umur' => $skor_umur,
-            'skor_berat' => $skor_berat,
-            'skor_birahi' => $skor_birahi,
-            'total_skor' => $total_skor,
-            'hasil_status' => $hasil_status,
-            'umur_bulan' => $umur_bulan,
-            'berat' => $berat
+            'id'               => isset($data['id'])               ? $data['id']               : null,
+            'kode_sapi'        => isset($data['kodeSapi'])         ? $data['kodeSapi']         : '',
+            'jenis'            => isset($data['jenis'])            ? $data['jenis']            : '',
+            'tanggal_lahir'    => isset($data['tanggalLahir'])     ? $data['tanggalLahir']     : null,
+            'berat'            => isset($data['berat'])            ? $data['berat']            : 0,
+            'status_reproduksi'=> isset($data['statusReproduksi']) ? $data['statusReproduksi'] : 'Kosong',
+            'tanggal_ib'       => isset($data['tanggalIb'])        ? $data['tanggalIb']        : null,
+            'admin_id'         => isset($data['adminId'])          ? $data['adminId']          : null,
+            'last_admin'       => isset($data['admin']['nama'])    ? $data['admin']['nama']    : 'System',
+            'admin_role'       => isset($data['admin']['role'])    ? $data['admin']['role']    : 'admin'
         ];
+    }
+
+    // Read all sapi
+    public function readAll() {
+        $query = 'query ListCattle {
+            cattles(orderBy: { createdAt: DESC }) {
+                id
+                kodeSapi
+                jenis
+                tanggalLahir
+                berat
+                statusReproduksi
+                tanggalIb
+                adminId
+                admin {
+                    nama
+                    role
+                }
+            }
+        }';
+        
+        $res = $this->conn->execute($query);
+        $items = isset($res['data']['cattles']) ? $res['data']['cattles'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = $this->mapData($item);
+        }
+        
+        // Kita return object QueryResult agar fetchAll() di dashboard tidak error
+        return new QueryResult($results);
     }
 
     // Search sapi
     public function search($keyword) {
-        $query = "SELECT * FROM " . $this->table . " WHERE kode_sapi LIKE :keyword OR jenis LIKE :keyword2 ORDER BY id DESC";
-        $stmt = $this->conn->prepare($query);
-        $keyword = '%' . $keyword . '%';
-        $stmt->bindParam(':keyword', $keyword);
-        $stmt->bindParam(':keyword2', $keyword);
-        $stmt->execute();
-        return $stmt;
+        $query = 'query SearchCattle($kw: String!) {
+            cattles(where: { 
+                or: [
+                    { kodeSapi: { contains: $kw } },
+                    { jenis: { contains: $kw } }
+                ]
+            }, orderBy: { createdAt: DESC }) {
+                id kodeSapi jenis tanggalLahir berat statusReproduksi tanggalIb adminId
+                admin { nama role }
+            }
+        }';
+        
+        $res = $this->conn->execute($query, ['kw' => $keyword]);
+        $items = isset($res['data']['cattles']) ? $res['data']['cattles'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = $this->mapData($item);
+        }
+        
+        return new QueryResult($results);
+    }
+
+    // Get by ID
+    public function getById($id) {
+        $query = 'query GetCattle($id: UUID! @allow(fields: "id")) {
+            cattle(id: $id) {
+                id kodeSapi jenis tanggalLahir berat statusReproduksi tanggalIb adminId
+                admin { nama role }
+            }
+        }';
+        
+        $res = $this->conn->execute($query, ['id' => (string)$id]);
+        return $this->mapData(isset($res['data']['cattle']) ? $res['data']['cattle'] : null);
+    }
+
+    // Create new sapi
+    public function create() {
+        $query = 'mutation CreateCattle($data: Cattle_Data! @allow(fields: "id kodeSapi jenis tanggalLahir berat statusReproduksi tanggalIb adminId createdAt updatedAt")) {
+            cattle_insert(data: $data)
+        }';
+        
+        $now = date('c');
+        $variables = [
+            'data' => [
+                'kodeSapi' => $this->kode_sapi,
+                'jenis' => $this->jenis,
+                'tanggalLahir' => $this->tanggal_lahir,
+                'berat' => (int)$this->berat,
+                'statusReproduksi' => $this->status_reproduksi ?: 'Kosong',
+                'tanggalIb' => isset($this->tanggal_ib) ? $this->tanggal_ib : null,
+                'adminId' => isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null,
+                'createdAt' => $now,
+                'updatedAt' => $now
+            ]
+        ];
+
+        $res = $this->conn->execute($query, $variables);
+        return isset($res['data']['cattle_insert']['id']) ? $res['data']['cattle_insert']['id'] : false;
+    }
+
+    // Cek apakah kode_sapi sudah ada (untuk validasi duplikat saat import)
+    public function kodeSapiExists($kode_sapi) {
+        $query = 'query CheckKode($kode: String!) {
+            cattles(where: { kodeSapi: { eq: $kode } }) { id }
+        }';
+        $res = $this->conn->execute($query, ['kode' => $kode_sapi]);
+        return !empty($res['data']['cattles']);
+    }
+
+    // Update sapi
+    public function update() {
+        $current = $this->getById($this->id);
+        if (!$current) return false;
+
+        $query = 'mutation UpdateCattle($id: UUID!, $data: Cattle_Data! @allow(fields: "kodeSapi jenis tanggalLahir berat statusReproduksi tanggalIb updatedAt")) {
+            cattle_update(id: $id, data: $data)
+        }';
+        
+        $variables = array(
+            'id' => (string)$this->id,
+            'data' => array(
+                'kodeSapi' => $this->kode_sapi,
+                'jenis' => $this->jenis,
+                'tanggalLahir' => $this->tanggal_lahir,
+                'berat' => (int)$this->berat,
+                'statusReproduksi' => isset($this->status_reproduksi) ? $this->status_reproduksi : $current['status_reproduksi'],
+                'tanggalIb' => isset($this->tanggal_ib) ? $this->tanggal_ib : $current['tanggal_ib'],
+                'updatedAt' => date('c')
+            )
+        );
+
+        $res = $this->conn->execute($query, $variables);
+        return isset($res['data']['cattle_update']);
+    }
+
+    // Delete sapi
+    // --- Birahi Methods ---
+    // Get latest birahi for all cows (for dashboard)
+    public function getAllLatestBirahi() {
+        $query = 'query AllBirahis {
+            heatCycles(orderBy: { tanggalBirahi: DESC }) {
+                cattleId
+                tanggalBirahi
+            }
+        }';
+        
+        $res = $this->conn->execute($query);
+        $items = isset($res['data']['heatCycles']) ? $res['data']['heatCycles'] : array();
+        
+        $latest = [];
+        foreach ($items as $item) {
+            // Because we sort by date DESC, the first one we encounter for each cow is the latest
+            if (!isset($latest[$item['cattleId']])) {
+                $latest[$item['cattleId']] = [
+                    'id_sapi' => $item['cattleId'],
+                    'tanggal_birahi' => $item['tanggalBirahi']
+                ];
+            }
+        }
+        return $latest;
+    }
+
+    public function createBirahi($id_sapi, $tanggal_birahi) {
+        $id_sapi = $this->formatUUID($id_sapi);
+        $query = 'mutation CreateBirahi($data: HeatCycle_Data! @allow(fields: "cattleId tanggalBirahi createdAt")) {
+            heatCycle_insert(data: $data)
+        }';
+        $variables = array(
+            'data' => array(
+                'cattleId' => (string)$id_sapi,
+                'tanggalBirahi' => $tanggal_birahi,
+                'createdAt' => date('c')
+            )
+        );
+        $res = $this->conn->execute($query, $variables);
+        if (isset($res['data']['heatCycle_insert'])) {
+            // Update status sapi menjadi "Sudah Birahi"
+            $this->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
+            return true;
+        }
+        return false;
+    }
+
+    private function formatUUID($uuid) {
+        if (strlen($uuid) == 32 && strpos($uuid, '-') === false) {
+            return substr($uuid, 0, 8) . '-' . substr($uuid, 8, 4) . '-' . substr($uuid, 12, 4) . '-' . substr($uuid, 16, 4) . '-' . substr($uuid, 20);
+        }
+        return $uuid;
+    }
+
+    public function getBirahiByIdSapi($id_sapi) {
+        $id_sapi = $this->formatUUID($id_sapi);
+        $query = 'query GetBirahi($id: UUID!) {
+            heatCycles(where: { cattleId: { eq: $id } }, orderBy: { tanggalBirahi: DESC }) {
+                id
+                tanggalBirahi
+                createdAt
+            }
+        }';
+        $res = $this->conn->execute($query, ['id' => (string)$id_sapi]);
+        $items = isset($res['data']['heatCycles']) ? $res['data']['heatCycles'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = [
+                'id' => $item['id'],
+                'tanggal_birahi' => $item['tanggalBirahi'],
+                'created_at' => $item['createdAt']
+            ];
+        }
+        return new QueryResult($results);
+    }
+
+    public function getLatestBirahi($id_sapi) {
+        $id_sapi = $this->formatUUID($id_sapi);
+        $query = 'query GetLatestBirahi($id: UUID!) {
+            heatCycles(where: { cattleId: { eq: $id } }, orderBy: { tanggalBirahi: DESC }, limit: 1) {
+                id
+                tanggalBirahi
+            }
+        }';
+        $res = $this->conn->execute($query, ['id' => (string)$id_sapi]);
+        return isset($res['data']['heatCycles'][0]) ? $res['data']['heatCycles'][0] : null;
+    }
+
+    public function deleteBirahi($id) {
+        $query = 'mutation DeleteBirahi($id: UUID!) {
+            heatCycle_delete(id: $id)
+        }';
+        $res = $this->conn->execute($query, ['id' => (string)$id]);
+        return isset($res['data']['heatCycle_delete']);
+    }
+
+    // --- Activity Log Methods ---
+    public function logActivity($user_id, $jenis_aktivitas, $deskripsi) {
+        $user_id = $this->formatUUID($user_id);
+        $query = 'mutation CreateLog($data: ActivityLog_Data! @allow(fields: "userId jenisAktivitas deskripsi createdAt")) {
+            activityLog_insert(data: $data)
+        }';
+        $variables = array(
+            'data' => array(
+                'userId' => (string)$user_id,
+                'jenisAktivitas' => $jenis_aktivitas,
+                'deskripsi' => $deskripsi,
+                'createdAt' => date('c')
+            )
+        );
+        $res = $this->conn->execute($query, $variables);
+        return isset($res['data']['activityLog_insert']);
+    }
+
+    public function getHistoryBySapi($id_sapi) {
+        // Karena di GraphQL kita mungkin filter via deskripsi (like old way) atau field cattleId
+        // Kita asumsikan deskripsi mengandung kode_sapi atau ada cattleId
+        $sapi_data = $this->getById($id_sapi);
+        $kode = isset($sapi_data['kode_sapi']) ? $sapi_data['kode_sapi'] : '';
+        
+        $query = 'query GetHistory($kode: String!) {
+            activityLogs(where: { deskripsi: { contains: $kode } }, orderBy: { createdAt: DESC }) {
+                id
+                jenisAktivitas
+                deskripsi
+                createdAt
+                user {
+                    nama
+                    role
+                }
+            }
+        }';
+        
+        $res = $this->conn->execute($query, ['kode' => $kode]);
+        $items = isset($res['data']['activityLogs']) ? $res['data']['activityLogs'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = [
+                'id' => $item['id'],
+                'jenis' => $item['jenisAktivitas'],
+                'deskripsi' => $item['deskripsi'],
+                'created_at' => $item['createdAt'],
+                'nama' => isset($item['user']['nama']) ? $item['user']['nama'] : 'System',
+                'role' => isset($item['user']['role']) ? $item['user']['role'] : 'admin'
+            ];
+        }
+        return $results;
+    }
+
+    // Update status reproduksi
+    public function updateStatusReproduksi($id, $status) {
+        $id = $this->formatUUID($id);
+        $query = 'mutation UpdateStatus($id: UUID!, $data: Cattle_Data! @allow(fields: "statusReproduksi updatedAt")) {
+            cattle_update(id: $id, data: $data)
+        }';
+        $variables = array(
+            'id' => (string)$id,
+            'data' => array(
+                'statusReproduksi' => $status,
+                'updatedAt' => date('c')
+            )
+        );
+        $res = $this->conn->execute($query, $variables);
+        return isset($res['data']['cattle_update']);
+    }
+
+    // Set tanggal IB (status opsional agar bisa preserve Bunting)
+    public function setTanggalIB($id, $tanggal, $status = null) {
+        $id = $this->formatUUID($id);
+        $new_status = $status ?: ($tanggal ? "Sudah IB" : "Kosong");
+        $query = 'mutation SetIB($id: UUID!, $data: Cattle_Data! @allow(fields: "tanggalIb statusReproduksi updatedAt")) {
+            cattle_update(id: $id, data: $data)
+        }';
+        $variables = array(
+            'id' => (string)$id,
+            'data' => array(
+                'tanggalIb' => $tanggal,
+                'statusReproduksi' => $new_status,
+                'updatedAt' => date('c')
+            )
+        );
+        $res = $this->conn->execute($query, $variables);
+        return isset($res['data']['cattle_update']);
+    }
+
+    public function delete($id) {
+        $id = $this->formatUUID($id);
+
+        // Hapus semua HeatCycle terkait terlebih dahulu (FK constraint)
+        $hcQuery = 'query GetHCIds($cid: UUID!) {
+            heatCycles(where: { cattleId: { eq: $cid } }) { id }
+        }';
+        $hcRes = $this->conn->execute($hcQuery, ['cid' => (string)$id]);
+        if (!empty($hcRes['data']['heatCycles'])) {
+            foreach ($hcRes['data']['heatCycles'] as $hc) {
+                $delHC = 'mutation DelHC($hid: UUID!) { heatCycle_delete(id: $hid) }';
+                $this->conn->execute($delHC, ['hid' => (string)$hc['id']]);
+                usleep(150000); // 150ms jeda
+            }
+        }
+
+        // Baru hapus cattle
+        $query = 'mutation DeleteCattle($id: UUID! @allow(fields: "id")) {
+            cattle_delete(id: $id)
+        }';
+        $res = $this->conn->execute($query, ['id' => (string)$id]);
+        return isset($res['data']['cattle_delete']);
+    }
+
+    // Get recent activities
+    public function getRecentActivities($limit = 5) {
+        $query = 'query GetRecentLogs($limit: Int!) {
+            activityLogs(orderBy: { createdAt: DESC }, limit: $limit) {
+                id
+                jenisAktivitas
+                deskripsi
+                createdAt
+                user {
+                    nama
+                    role
+                }
+            }
+        }';
+        
+        $res = $this->conn->execute($query, array('limit' => $limit));
+        $items = isset($res['data']['activityLogs']) ? $res['data']['activityLogs'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = [
+                'id' => $item['id'],
+                'jenis_aktivitas' => $item['jenisAktivitas'],
+                'deskripsi' => $item['deskripsi'],
+                'created_at' => $item['createdAt'],
+                'nama' => isset($item['user']['nama']) ? $item['user']['nama'] : 'System',
+                'role' => isset($item['user']['role']) ? $item['user']['role'] : 'admin'
+            ];
+        }
+        
+        return new QueryResult($results);
+    }
+
+    // Get all activities
+    public function getAllActivities() {
+        $query = 'query GetAllLogs {
+            activityLogs(orderBy: { createdAt: DESC }) {
+                id
+                jenisAktivitas
+                deskripsi
+                createdAt
+                user {
+                    nama
+                    role
+                }
+            }
+        }';
+        
+        $res = $this->conn->execute($query);
+        $items = isset($res['data']['activityLogs']) ? $res['data']['activityLogs'] : array();
+        
+        $results = [];
+        foreach ($items as $item) {
+            $results[] = [
+                'id' => $item['id'],
+                'jenis_aktivitas' => $item['jenisAktivitas'],
+                'deskripsi' => $item['deskripsi'],
+                'created_at' => $item['createdAt'],
+                'nama' => isset($item['user']['nama']) ? $item['user']['nama'] : 'System',
+                'role' => isset($item['user']['role']) ? $item['user']['role'] : 'admin'
+            ];
+        }
+        
+        return new QueryResult($results);
     }
 }
 ?>

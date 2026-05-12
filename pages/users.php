@@ -6,111 +6,88 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-if (!isset($current_user['role']) || $current_user['role'] !== 'admin') {
+if (!isset($current_user['role']) || (strtolower($current_user['role']) !== 'admin' && strtolower($current_user['role']) !== 'superadmin')) {
     header("Location: dashboard.php");
     exit;
 }
 
-// Auto-migrasi: tambah kolom nip jika belum ada (hanya sekali per sesi)
-if (!isset($_SESSION['_migration_nip_done'])) {
-    try {
-        $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama");
-    } catch (PDOException $e) { /* Kolom sudah ada, abaikan */ }
-    $_SESSION['_migration_nip_done'] = true;
-}
-
-$pesan = '';
-$error = '';
-
 // Handle Add User
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_user'])) {
-    $nama = trim($_POST['nama']);
+    $nama  = trim($_POST['nama']);
     $email = trim($_POST['email']);
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $role = $_POST['role'];
+    $role  = $_POST['role'];
 
-    $check = $db->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
-    $check->bindParam(':email', $email);
-    $check->execute();
-
-    if ($check->rowCount() > 0) {
-        $error = "Email sudah terdaftar.";
+    if ($user_model->emailExists($email)) {
+        header("Location: users.php?error=" . urlencode("Email $email sudah terdaftar."));
     } else {
-        $stmt = $db->prepare("INSERT INTO users (nama, email, password, role) VALUES (:nama, :email, :password, :role)");
-        $stmt->bindParam(':nama', $nama);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $password);
-        $stmt->bindParam(':role', $role);
-        if ($stmt->execute()) {
-            $pesan = "User berhasil ditambahkan!";
+        $user_model->nama     = $nama;
+        $user_model->email    = $email;
+        $user_model->password = $password;
+        $user_model->role     = $role;
+        if ($user_model->create()) {
+            header("Location: users.php?pesan=" . urlencode("User $nama berhasil ditambahkan!"));
         } else {
-            $error = "Gagal menambahkan user.";
+            header("Location: users.php?error=" . urlencode("Gagal menambahkan user. Coba lagi."));
         }
     }
+    exit;
 }
 
 // Handle Edit Password
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_password'])) {
-    $uid = intval($_POST['user_id']);
-    $new_pass = $_POST['new_password'];
+    $uid          = $_POST['user_id'];
+    $new_pass     = $_POST['new_password'];
     $confirm_pass = $_POST['confirm_password'];
 
     if (strlen($new_pass) < 6) {
-        $error = "Password minimal 6 karakter.";
+        header("Location: users.php?error=" . urlencode("Password minimal 6 karakter."));
     } elseif ($new_pass !== $confirm_pass) {
-        $error = "Konfirmasi password tidak cocok.";
+        header("Location: users.php?error=" . urlencode("Konfirmasi password tidak cocok."));
     } else {
         $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
-        $stmt = $db->prepare("UPDATE users SET password = :password WHERE id = :id");
-        $stmt->bindParam(':password', $hashed);
-        $stmt->bindParam(':id', $uid);
-        if ($stmt->execute()) {
-            $pesan = "Password berhasil diperbarui!";
+        if ($user_model->updatePassword($uid, $hashed)) {
+            header("Location: users.php?pesan=" . urlencode("Password berhasil diperbarui!"));
         } else {
-            $error = "Gagal memperbarui password.";
+            header("Location: users.php?error=" . urlencode("Gagal memperbarui password."));
         }
     }
+    exit;
 }
 
 // Handle Delete User
 if (isset($_GET['hapus_user'])) {
     $uid = $_GET['hapus_user'];
-    if ($uid != $_SESSION['user_id']) {
-        $stmt = $db->prepare("DELETE FROM users WHERE id = :id");
-        $stmt->bindParam(':id', $uid);
-        if ($stmt->execute()) {
-            $pesan = "User berhasil dihapus!";
-        }
+    if ($uid == $_SESSION['user_id']) {
+        header("Location: users.php?error=" . urlencode("Tidak bisa menghapus akun sendiri."));
+    } elseif ($user_model->delete($uid)) {
+        header("Location: users.php?pesan=" . urlencode("User berhasil dihapus."));
     } else {
-        $error = "Tidak bisa menghapus akun sendiri.";
+        header("Location: users.php?error=" . urlencode("Gagal menghapus user."));
     }
+    exit;
 }
 
 // Handle Edit NIP/NIK & Nama
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_nip'])) {
-    $uid      = intval($_POST['user_id_nip']);
-    $nip      = trim($_POST['nip']);
+    $uid       = $_POST['user_id_nip'];
+    $nip       = trim($_POST['nip']);
     $nama_baru = trim($_POST['nama_baru']);
-    $stmt = $db->prepare("UPDATE users SET nip = :nip, nama = :nama WHERE id = :id");
-    $stmt->bindParam(':nip', $nip);
-    $stmt->bindParam(':nama', $nama_baru);
-    $stmt->bindParam(':id', $uid);
-    if ($stmt->execute()) {
-        $pesan = "Nama & NIP/NIK berhasil diperbarui!";
-        // Refresh current_user jika yang diedit adalah diri sendiri
+
+    if ($user_model->updateNip($uid, $nama_baru, $nip)) {
         if ($uid == $_SESSION['user_id']) {
             $current_user['nama'] = $nama_baru;
             $current_user['nip']  = $nip;
         }
+        header("Location: users.php?pesan=" . urlencode("Nama & NIP/NIK berhasil diperbarui!"));
     } else {
-        $error = "Gagal memperbarui NIP/NIK.";
+        header("Location: users.php?error=" . urlencode("Gagal memperbarui NIP/NIK."));
     }
+    exit;
 }
 
 // Get all users
-$stmt = $db->prepare("SELECT * FROM users ORDER BY id ASC");
-$stmt->execute();
-$all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$all_users = $user_model->readAll()->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -138,16 +115,7 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <main class="p-4 sm:p-6 pb-24 md:pb-6 space-y-6 w-full">
 
-        <?php if($pesan): ?>
-            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2 shadow-sm">
-                <i class="fas fa-check-circle text-emerald-500"></i> <?php echo $pesan; ?>
-            </div>
-        <?php endif; ?>
-        <?php if($error): ?>
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2 shadow-sm">
-                <i class="fas fa-exclamation-circle text-red-400"></i> <?php echo $error; ?>
-            </div>
-        <?php endif; ?>
+
 
 
         <!-- Main Table & Cards Section -->
@@ -213,22 +181,22 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <td class="p-4 text-gray-500 text-[12px] font-mono"><?php echo $u['nip'] ? htmlspecialchars($u['nip']) : '<span class="text-gray-300 italic">Belum diisi</span>'; ?></td>
                             <td class="p-4 text-gray-500 text-[13px] search-target-sub"><?php echo htmlspecialchars($u['email']); ?></td>
                             <td class="p-4">
-                                <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold <?php echo $u['role'] == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
-                                    <?php echo $u['role'] == 'admin' ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
+                                <span class="inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold <?php echo (strtolower($u['role']) == 'admin' || strtolower($u['role']) == 'superadmin') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
+                                    <?php echo (strtolower($u['role']) == 'admin' || strtolower($u['role']) == 'superadmin') ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
                                 </span>
                             </td>
                             <td class="p-4">
                                 <div class="flex items-center justify-center gap-2">
-                                    <button onclick="openEditPassword(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
+                                    <button onclick="openEditPassword('<?php echo $u['id']; ?>', '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
                                         class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 inline-flex items-center justify-center hover:bg-emerald-500 hover:text-white transition shadow-sm" title="Edit Password">
                                         <i class="fas fa-key text-xs"></i>
                                     </button>
-                                    <button onclick="openEditNip(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($u['nip'] ?? '', ENT_QUOTES); ?>')"
+                                    <button onclick="openEditNip('<?php echo $u['id']; ?>', '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($u['nip'] ? $u['nip'] : '', ENT_QUOTES); ?>')"
                                         class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 inline-flex items-center justify-center hover:bg-blue-500 hover:text-white transition shadow-sm" title="Edit Nama & NIP">
                                         <i class="fas fa-id-card text-xs"></i>
                                     </button>
                                     <?php if ($u['id'] != $_SESSION['user_id']): ?>
-                                        <a href="?hapus_user=<?php echo $u['id']; ?>" onclick="return confirm('Yakin hapus user <?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>?')"
+                                        <a href="?hapus_user=<?php echo $u['id']; ?>" data-confirm-delete="User <?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?> akan dihapus dari sistem!"
                                             class="w-9 h-9 rounded-xl bg-red-50 text-red-600 inline-flex items-center justify-center hover:bg-red-500 hover:text-white transition shadow-sm" title="Hapus">
                                             <i class="fas fa-trash text-xs"></i>
                                         </a>
@@ -257,8 +225,8 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 <p class="text-xs text-gray-400 search-target-sub-mobile"><?php echo htmlspecialchars($u['email']); ?></p>
                             </div>
                         </div>
-                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold <?php echo $u['role'] == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
-                            <?php echo $u['role'] == 'admin' ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold <?php echo (strtolower($u['role']) == 'admin' || strtolower($u['role']) == 'superadmin') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'; ?>">
+                            <?php echo (strtolower($u['role']) == 'admin' || strtolower($u['role']) == 'superadmin') ? 'ADMINISTRATOR' : 'PETUGAS LAPANGAN'; ?>
                         </span>
                     </div>
 
@@ -268,12 +236,12 @@ $all_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                 Akun Anda
                             </div>
                         <?php endif; ?>
-                        <button onclick="openEditPassword(<?php echo $u['id']; ?>, '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
+                        <button onclick="openEditPassword('<?php echo $u['id']; ?>', '<?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>')"
                             class="flex-1 bg-emerald-50 text-emerald-600 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2">
                             <i class="fas fa-key"></i> Password
                         </button>
                         <?php if ($u['id'] != $_SESSION['user_id']): ?>
-                            <a href="?hapus_user=<?php echo $u['id']; ?>" onclick="return confirm('Yakin hapus user <?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?>?')"
+                            <a href="?hapus_user=<?php echo $u['id']; ?>" data-confirm-delete="User <?php echo htmlspecialchars($u['nama'], ENT_QUOTES); ?> akan dihapus dari sistem!"
                                 class="w-11 h-11 bg-red-50 text-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-trash"></i>
                             </a>

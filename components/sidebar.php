@@ -16,6 +16,143 @@ $current_page = basename($_SERVER['PHP_SELF']);
     }
 </style>
 
+<!-- Flatpickr: Indonesian Date Picker (Global) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+
+<!-- SweetAlert2 (Global) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// =============================================
+// CATTLEPRO GLOBAL SWEETALERT2 CONFIG
+// =============================================
+const CP = {
+    // Toast notifikasi (auto dismiss) — posisi tengah
+    toast: function(type, msg, timer = 3000) {
+        const colors = { success: '#00A166', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+        const icons  = { success: 'success', error: 'error', warning: 'warning', info: 'info' };
+        Swal.fire({
+            position: 'center',
+            icon: icons[type] || 'info',
+            title: msg,
+            showConfirmButton: false,
+            timer: timer,
+            timerProgressBar: true,
+            iconColor: colors[type] || '#00A166',
+            customClass: { popup: 'cp-dialog' },
+            didOpen: (popup) => {
+                popup.addEventListener('mouseenter', Swal.stopTimer);
+                popup.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+    },
+
+    // Dialog konfirmasi
+    confirm: function(msg, callback, opts = {}) {
+        Swal.fire({
+            title: opts.title || 'Konfirmasi',
+            text: msg,
+            icon: opts.icon || 'warning',
+            showCancelButton: true,
+            confirmButtonText: opts.confirmText || '<i class="fas fa-check mr-1"></i> Ya, Lanjutkan',
+            cancelButtonText: '<i class="fas fa-times mr-1"></i> Batal',
+            confirmButtonColor: opts.danger ? '#ef4444' : '#00A166',
+            cancelButtonColor: '#64748b',
+            reverseButtons: true,
+            customClass: { popup: 'cp-dialog' }
+        }).then(function(result) {
+            if (result.isConfirmed) callback();
+        });
+    },
+
+    // Konfirmasi hapus (merah)
+    confirmDelete: function(msg, callback) {
+        CP.confirm(msg, callback, {
+            title: 'Hapus Data?',
+            icon: 'warning',
+            confirmText: '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
+            danger: true
+        });
+    }
+};
+
+// =============================================
+// AUTO HANDLE: ?pesan= dan ?error= di URL
+// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('pesan')) {
+        CP.toast('success', params.get('pesan'));
+        // Bersihkan URL tanpa reload
+        var url = new URL(window.location.href);
+        url.searchParams.delete('pesan');
+        window.history.replaceState({}, '', url.toString());
+    }
+    if (params.get('error')) {
+        CP.toast('error', params.get('error'));
+        var url = new URL(window.location.href);
+        url.searchParams.delete('error');
+        window.history.replaceState({}, '', url.toString());
+    }
+    if (params.get('warning')) {
+        CP.toast('warning', params.get('warning'));
+        var url = new URL(window.location.href);
+        url.searchParams.delete('warning');
+        window.history.replaceState({}, '', url.toString());
+    }
+
+    // =============================================
+    // AUTO HANDLE: data-confirm-delete attribute
+    // =============================================
+    document.querySelectorAll('[data-confirm-delete]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = el.getAttribute('href') || el.getAttribute('data-href');
+            var msg = el.getAttribute('data-confirm-delete') || 'Data ini akan dihapus permanen!';
+            CP.confirmDelete(msg, function() {
+                window.location.href = href;
+            });
+        });
+    });
+
+    // AUTO HANDLE: data-confirm attribute (generic confirm)
+    document.querySelectorAll('[data-confirm]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            var href = el.getAttribute('href') || el.getAttribute('data-href');
+            var msg = el.getAttribute('data-confirm') || 'Apakah Anda yakin?';
+            CP.confirm(msg, function() {
+                if (href) window.location.href = href;
+                else el.closest('form').submit();
+            });
+        });
+    });
+
+    // Flatpickr Indonesian locale
+    flatpickr.localize(flatpickr.l10ns.id);
+    document.querySelectorAll('input[type="date"]').forEach(function(el) {
+        flatpickr(el, { locale: 'id', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd F Y', defaultDate: el.value || new Date(), disableMobile: true });
+    });
+    document.querySelectorAll('input[type="datetime-local"]').forEach(function(el) {
+        flatpickr(el, { locale: 'id', dateFormat: 'Y-m-d\\TH:i', altInput: true, altFormat: 'd F Y H:i', enableTime: true, time_24hr: true, defaultDate: el.value || new Date(), disableMobile: true });
+    });
+});
+</script>
+
+<style>
+/* CattlePro SweetAlert2 Theme */
+.cp-toast { font-family: 'Plus Jakarta Sans', sans-serif !important; border-radius: 14px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important; }
+.cp-toast-title { font-size: 14px !important; font-weight: 600 !important; }
+.cp-dialog { font-family: 'Plus Jakarta Sans', sans-serif !important; border-radius: 20px !important; }
+.swal2-confirm, .swal2-cancel { border-radius: 10px !important; font-weight: 700 !important; font-size: 14px !important; padding: 10px 20px !important; }
+.swal2-title { font-size: 20px !important; font-weight: 800 !important; color: #0f172a !important; }
+.swal2-html-container { font-size: 14px !important; color: #64748b !important; }
+</style>
+
+
 <!-- Desktop Sidebar -->
 <aside id="sidebar" class="hidden md:flex flex-col w-[250px] bg-[#0A3622] h-screen shrink-0 z-20">
     
@@ -36,7 +173,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <?php echo isset($current_user['nama']) ? strtoupper(substr($current_user['nama'], 0, 1)) : 'S'; ?>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-[13px] font-bold text-white truncate"><?php echo isset($current_user['nama']) ? htmlspecialchars($current_user['nama']) : 'Super Admin'; ?></p>
+                <p class="text-[13px] font-bold text-white"><?php
+                    $full_name = isset($current_user['nama']) ? $current_user['nama'] : 'Super Admin';
+                    $first_name = explode(' ', trim($full_name))[0];
+                    echo htmlspecialchars($first_name);
+                ?></p>
                 <p class="text-[10px] text-[#00D084] uppercase font-bold tracking-wider mt-0.5"><?php echo isset($current_user['role']) ? htmlspecialchars(strtoupper($current_user['role'])) : 'SUPERADMIN'; ?></p>
             </div>
         </div>
@@ -61,7 +202,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="font-bold">Pemeriksaan</span>
         </a>
 
-        <?php if(isset($current_user['role']) && strtolower($current_user['role']) === 'admin'): ?>
+        <?php if(isset($current_user['role']) && (strtolower($current_user['role']) === 'admin' || strtolower($current_user['role']) === 'superadmin')): ?>
         <p class="text-[10px] uppercase text-[#8ba99a] font-bold tracking-widest mb-3 ml-2 mt-6">Sistem</p>
 
         <a href="users.php" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200 <?php echo ($current_page == 'users.php') ? 'bg-[#00D084] text-[#0A3622] font-bold shadow-lg shadow-[#00D084]/20' : 'text-[#a2c5b4] hover:text-white hover:bg-[#144834]'; ?>">
@@ -100,7 +241,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-stethoscope text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Periksa</span>
         </a>
-        <?php if(isset($current_user['role']) && strtolower($current_user['role']) === 'admin'): ?>
+        <?php if(isset($current_user['role']) && (strtolower($current_user['role']) === 'admin' || strtolower($current_user['role']) === 'superadmin')): ?>
         <a href="users.php" class="flex flex-col items-center gap-1.5 py-1 px-3 rounded-xl transition-all <?php echo ($current_page == 'users.php') ? 'text-[#00D084] bg-[#144834]' : 'text-[#8ba99a]'; ?>">
             <i class="fas fa-users-cog text-xl"></i>
             <span class="text-[9px] font-bold uppercase tracking-wider">Users</span>

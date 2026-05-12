@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Get filter: single sapi or all
-$id_filter = isset($_GET['id']) ? intval($_GET['id']) : null;
+$id_filter = isset($_GET['id']) ? $_GET['id'] : null;
 
 if ($id_filter) {
     $sapi_data = $sapi->getById($id_filter);
@@ -52,7 +52,7 @@ unset($s);
 $print_date = tgl_indo(date('Y-m-d'));
 $print_time = date('H:i');
 $company_name = "CattlePro Management System";
-$exported_by = $current_user['nama'] ?? 'Admin';
+$exported_by = isset($current_user['nama']) ? $current_user['nama'] : 'Admin';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -472,7 +472,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
 <div class="paper-wrapper">
 
 <?php foreach ($semua_sapi as $idx => $s):
-    $status = $s['status_reproduksi'] ?? 'Kosong';
+    $status = isset($s['status_reproduksi']) ? $s['status_reproduksi'] : 'Kosong';
     $status_class_map = [
         'Kosong'        => 'status-kosong',
         'Sudah Birahi'  => 'status-birahi',
@@ -480,7 +480,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
         'Bunting'       => 'status-bunting',
         'Gagal Hamil'   => 'status-gagal',
     ];
-    $status_class = $status_class_map[$status] ?? 'status-kosong';
+    $status_class = isset($status_class_map[$status]) ? $status_class_map[$status] : 'status-kosong';
 
     $birahi_list = $s['birahi_history'];
     $total_birahi = count($birahi_list);
@@ -572,7 +572,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                 </div>
                 <div>
                     <div class="m-label">Pemeriksaan Kebuntingan</div>
-                    <div class="m-value"><?php echo $s['pkb'] ?? ($s['hpl'] ? 'Sudah Bunting' : ($s['tanggal_ib'] ? 'Perlu dicek' : '-')); ?></div>
+                    <div class="m-value"><?php echo isset($s['pkb']) ? $s['pkb'] : ($s['hpl'] ? 'Sudah Bunting' : ($s['tanggal_ib'] ? 'Perlu dicek' : '-')); ?></div>
                     <div class="m-note"><?php echo $s['pkb'] ? 'Estimasi jadwal Pemeriksaan Kebuntingan (60 hari pasca Inseminasi Buatan)' : ($s['hpl'] ? 'Sapi dikonfirmasi bunting' : 'Belum ada data Inseminasi Buatan'); ?></div>
                 </div>
             </div>
@@ -582,7 +582,7 @@ $exported_by = $current_user['nama'] ?? 'Admin';
                 </div>
                 <div>
                     <div class="m-label">Hari Perkiraan Lahir</div>
-                    <div class="m-value"><?php echo $s['hpl'] ?? ($s['tanggal_ib'] && $status === 'Bunting' ? 'Hitung Pemeriksaan Kebuntingan dulu' : '-'); ?></div>
+                    <div class="m-value"><?php echo isset($s['hpl']) ? $s['hpl'] : ($s['tanggal_ib'] && $status === 'Bunting' ? 'Hitung Pemeriksaan Kebuntingan dulu' : '-'); ?></div>
                     <div class="m-note"><?php echo $s['hpl'] ? 'Estimasi kelahiran (283 hari pasca Inseminasi Buatan)' : 'Belum bisa diprediksi'; ?></div>
                 </div>
             </div>
@@ -671,27 +671,16 @@ $exported_by = $current_user['nama'] ?? 'Admin';
         </div>
     </div>
 
-    <!-- ===== TANDA TANGAN ===== -->
     <?php
-        // Auto-migrasi kolom nip jika belum ada
-        try { $db->exec("ALTER TABLE users ADD COLUMN nip VARCHAR(50) NULL AFTER nama"); } catch(PDOException $e) {}
+    // Ambil data penandatangan
+    $ttd_user = $user_model->getById($_SESSION['user_id']);
+    $ttd_nama = isset($ttd_user['nama']) ? $ttd_user['nama'] : $exported_by;
+    $ttd_nip  = isset($ttd_user['nip']) ? $ttd_user['nip'] : '';
 
-        // Ambil data penandatangan
-        try {
-            $stmt_ttd = $db->prepare("SELECT nama, nip FROM users WHERE id = :id LIMIT 1");
-            $stmt_ttd->bindParam(':id', $_SESSION['user_id']);
-            $stmt_ttd->execute();
-            $ttd_user = $stmt_ttd->fetch(PDO::FETCH_ASSOC);
-            $ttd_nama = $ttd_user['nama'] ?? $exported_by;
-            $ttd_nip  = $ttd_user['nip'] ?? '';
-        } catch (PDOException $e) {
-            $ttd_nama = $exported_by;
-            $ttd_nip  = '';
-        }
-        $bulan_indo = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        $tgl_ttd = date('d') . ' ' . $bulan_indo[(int)date('n')] . ' ' . date('Y');
-        $kota = defined('APP_CITY') ? APP_CITY : '................';
+    $bulan_indo = array('', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
+    $tgl_ttd = date('d') . ' ' . $bulan_indo[(int)date('n')] . ' ' . date('Y');
+    $kota = defined('APP_CITY') ? APP_CITY : '................';
     ?>
     <div style="page-break-inside: avoid; margin: 28px 0 8px 0; padding: 0 4px;">
         <div style="display: flex; justify-content: flex-end;">

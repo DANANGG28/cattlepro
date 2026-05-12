@@ -20,19 +20,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $db->prepare("SELECT * FROM users WHERE email = :email LIMIT 1");
-    $stmt->bindParam(':email', $email);
-    $stmt->execute();
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_nama'] = $user['nama'];
-        $_SESSION['user_role'] = $user['role'];
-        header("Location: pages/dashboard.php");
-        exit;
+    // Firebase GraphQL Login (Direct String Injection for Raw Body)
+    $query = 'query GetUser {
+        users(where: { email: { eq: "' . $email . '" } }) {
+            id
+            nama
+            email
+            password
+            role
+        }
+    }';
+    
+    $res = $db->execute($query);
+    
+    // Jika $res adalah null atau bukan array, berarti bukan JSON
+    if (!is_array($res)) {
+        $error = "Gagal terhubung ke Firebase.<br><small>Raw Response: " . htmlspecialchars($res) . "</small>";
     } else {
-        $error = "Email atau password salah.";
+        $user = isset($res['data']['users'][0]) ? $res['data']['users'][0] : null;
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_nama'] = $user['nama'];
+            $_SESSION['user_role'] = $user['role'];
+            header("Location: pages/dashboard.php");
+            exit;
+        } else {
+            $error = "Email atau password salah.<br><small>JSON Debug: " . json_encode($res) . "</small>";
+        }
     }
 }
 ?>

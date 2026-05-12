@@ -6,9 +6,6 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$pesan = isset($_GET['pesan']) ? $_GET['pesan'] : '';
-$error = '';
-
 // Handle Tambah Sapi
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_sapi'])) {
     $sapi->kode_sapi = $_POST['kode_sapi'];
@@ -20,41 +17,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_sapi'])) {
 
     $new_id = $sapi->create();
     if ($new_id) {
-        $pesan = "Sapi berhasil ditambahkan!";
         $sapi->logActivity($_SESSION['user_id'], 'tambah_sapi', "Mendaftarkan sapi baru: {$_POST['kode_sapi']}");
+        header("Location: sapi.php?pesan=" . urlencode("Sapi {$_POST['kode_sapi']} berhasil ditambahkan!"));
     } else {
-        $error = "Gagal menambahkan sapi.";
+        header("Location: sapi.php?error=" . urlencode("Gagal menambahkan sapi. Coba lagi."));
     }
+    exit;
 }
 
 // Handle Edit Sapi
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_sapi'])) {
     $sapi->id = $_POST['id'];
     $sapi->kode_sapi = $_POST['kode_sapi'];
-    $sapi->jenis = $_POST['jenis'];
+    $sapi->jenis = isset($_POST['jenis']) ? $_POST['jenis'] : '';
     $sapi->tanggal_lahir = $_POST['tanggal_lahir'];
     $sapi->berat = $_POST['berat'];
 
     if ($sapi->update()) {
-        $pesan = "Data sapi berhasil diperbarui!";
         $sapi->logActivity($_SESSION['user_id'], 'edit_sapi', "Mengubah data informasi sapi: {$_POST['kode_sapi']}");
+        header("Location: sapi.php?pesan=" . urlencode("Data sapi {$_POST['kode_sapi']} berhasil diperbarui!"));
     } else {
-        $error = "Gagal memperbarui data sapi.";
+        header("Location: sapi.php?error=" . urlencode("Gagal memperbarui data sapi."));
     }
+    exit;
 }
 
 // Handle Hapus Sapi
 if (isset($_GET['hapus'])) {
-    // Info for logging before deleting
     $sapi_to_delete = $sapi->getById($_GET['hapus']);
     if ($sapi->delete($_GET['hapus'])) {
-        $pesan = "Sapi berhasil dihapus!";
         if ($sapi_to_delete) {
             $sapi->logActivity($_SESSION['user_id'], 'hapus_sapi', "Menghapus sapi dari sistem: {$sapi_to_delete['kode_sapi']}");
+            header("Location: sapi.php?pesan=" . urlencode("Sapi {$sapi_to_delete['kode_sapi']} berhasil dihapus."));
+        } else {
+            header("Location: sapi.php?pesan=" . urlencode("Sapi berhasil dihapus."));
         }
     } else {
-        $error = "Gagal menghapus sapi.";
+        header("Location: sapi.php?error=" . urlencode("Gagal menghapus sapi. Mungkin data masih memiliki relasi."));
     }
+    exit;
 }
 
 // Handle Search
@@ -96,16 +97,7 @@ if ($keyword) {
     <!-- Content -->
     <main class="p-4 sm:p-6 pb-24 md:pb-6 space-y-6 w-full">
 
-        <?php if($pesan): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                <i class="fas fa-check-circle"></i> <?php echo $pesan; ?>
-            </div>
-        <?php endif; ?>
-        <?php if($error): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
-            </div>
-        <?php endif; ?>
+
 
         <!-- Search & Add -->
         <!-- Main Table Section -->
@@ -167,8 +159,8 @@ if ($keyword) {
                         <?php if(count($semua_sapi) > 0): ?>
                             <?php foreach($semua_sapi as $s): ?>
                             <?php 
-                                $status = trim($s['status_reproduksi'] ?? 'Kosong');
-                                $badge = $status_colors[$status] ?? $status_colors['Kosong'];
+                                $status = isset($s['status_reproduksi']) ? trim($s['status_reproduksi']) : 'Kosong';
+                                $badge = isset($status_colors[$status]) ? $status_colors[$status] : $status_colors['Kosong'];
                             ?>
                             <tr class="hover:bg-gray-50/50 transition border-b border-gray-50 last:border-0 sapi-row">
                                 <td class="p-4">
@@ -218,7 +210,7 @@ if ($keyword) {
                                         <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($s)); ?>)" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition shadow-sm group" title="Edit Data">
                                             <i class="fas fa-pen-to-square text-sm group-hover:scale-110 transition"></i>
                                         </button>
-                                        <a href="?hapus=<?php echo $s['id']; ?>" onclick="return confirm('Yakin ingin menghapus sapi ini?')" class="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition shadow-sm group" title="Hapus Data">
+                                        <a href="?hapus=<?php echo $s['id']; ?>" data-confirm-delete="Sapi <?php echo htmlspecialchars($s['kode_sapi']); ?> akan dihapus permanen dari sistem!" class="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-600 hover:text-white transition shadow-sm group" title="Hapus Data">
                                             <i class="fas fa-trash-alt text-sm group-hover:scale-110 transition"></i>
                                         </a>
                                     </div>
@@ -242,8 +234,8 @@ if ($keyword) {
             <?php if(count($semua_sapi) > 0): ?>
                 <?php foreach($semua_sapi as $s): ?>
                 <?php 
-                    $status = trim($s['status_reproduksi'] ?? 'Kosong');
-                    $badge = $status_colors[$status] ?? $status_colors['Kosong'];
+                    $status = isset($s['status_reproduksi']) ? trim($s['status_reproduksi']) : 'Kosong';
+                    $badge = isset($status_colors[$status]) ? $status_colors[$status] : $status_colors['Kosong'];
                 ?>
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4 sapi-card">
                     <div class="flex justify-between items-start">
@@ -296,7 +288,7 @@ if ($keyword) {
                             <button onclick="openEditModal(<?php echo htmlspecialchars(json_encode($s)); ?>)" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-sm">
                                 <i class="fas fa-pen-to-square"></i>
                             </button>
-                            <a href="?hapus=<?php echo $s['id']; ?>" onclick="return confirm('Yakin ingin menghapus sapi ini?')" class="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shadow-sm">
+                            <a href="?hapus=<?php echo $s['id']; ?>" data-confirm-delete="Sapi <?php echo htmlspecialchars($s['kode_sapi']); ?> akan dihapus permanen dari sistem!" class="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shadow-sm">
                                 <i class="fas fa-trash-alt"></i>
                             </a>
                         </div>

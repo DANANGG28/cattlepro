@@ -18,15 +18,8 @@ $count_gagal_hamil = 0;
 
 $notifikasi = [];
 
-// Batch fetch: ambil semua latest birahi sekaligus (1 query, bukan N)
-$stmt_birahi_all = $db->prepare("SELECT b1.* FROM birahi b1 
-    INNER JOIN (SELECT id_sapi, MAX(tanggal_birahi) as max_tgl FROM birahi GROUP BY id_sapi) b2 
-    ON b1.id_sapi = b2.id_sapi AND b1.tanggal_birahi = b2.max_tgl");
-$stmt_birahi_all->execute();
-$all_latest_birahi = [];
-foreach ($stmt_birahi_all->fetchAll(PDO::FETCH_ASSOC) as $b) {
-    $all_latest_birahi[$b['id_sapi']] = $b;
-}
+// Batch fetch: ambil semua latest birahi sekaligus
+$all_latest_birahi = $sapi->getAllLatestBirahi();
 
 // Loop untuk kalkulasi stats dan generate alert notifikasi
 foreach($semua_sapi as $key => $s) {
@@ -42,10 +35,10 @@ foreach($semua_sapi as $key => $s) {
         $count_gagal_hamil++;
     } elseif ($status == 'Sudah Birahi') {
         $count_birahi++;
-        $latest = $all_latest_birahi[$s['id']] ?? null;
+        $latest = isset($all_latest_birahi[$s['id']]) ? $all_latest_birahi[$s['id']] : null;
         if ($latest) {
              $semua_sapi[$key]['last_update_text'] = 'Birahi';
-             $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($latest['tanggal_birahi']));
+             $semua_sapi[$key]['last_update_date'] = tgl_indo($latest['tanggal_birahi']);
              
              $waktu_birahi = strtotime($latest['tanggal_birahi']);
              $sisa_jam = round((($waktu_birahi + (12 * 3600)) - time()) / 3600);
@@ -59,9 +52,9 @@ foreach($semua_sapi as $key => $s) {
         }
     } elseif ($status == 'Sudah IB') {
         $count_ib++;
-        if ($s['tanggal_ib']) {
+        if (!empty($s['tanggal_ib'])) {
              $semua_sapi[$key]['last_update_text'] = 'Inseminasi Buatan';
-             $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($s['tanggal_ib']));
+             $semua_sapi[$key]['last_update_date'] = tgl_indo(date('Y-m-d', strtotime($s['tanggal_ib'])));
              
              $waktu_ib = strtotime($s['tanggal_ib']);
              $waktu_pkb = $waktu_ib + (60 * 24 * 3600);
@@ -71,7 +64,7 @@ foreach($semua_sapi as $key => $s) {
                  $notifikasi[] = [
                      'icon' => 'fas fa-info-circle text-blue-500',
                      'bg' => 'bg-blue-50/70 border-blue-100',
-                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan pada " . date('d M Y', $waktu_pkb) . " (H-{$sisa_hari_pkb})."
+                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan pada " . tgl_indo(date('Y-m-d', $waktu_pkb)) . " (H-{$sisa_hari_pkb})."
                  ];
              } elseif ($sisa_hari_pkb <= 0) {
                  $notifikasi[] = [
@@ -83,9 +76,9 @@ foreach($semua_sapi as $key => $s) {
         }
     } elseif ($status == 'Bunting') {
         $count_bunting++;
-        if ($s['tanggal_ib']) {
+        if (!empty($s['tanggal_ib'])) {
              $semua_sapi[$key]['last_update_text'] = 'Pemeriksaan Kebuntingan'; 
-             $semua_sapi[$key]['last_update_date'] = date('d M Y', strtotime($s['tanggal_ib'])); 
+             $semua_sapi[$key]['last_update_date'] = tgl_indo(date('Y-m-d', strtotime($s['tanggal_ib']))); 
              
              $waktu_ib = strtotime($s['tanggal_ib']);
              $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
@@ -95,7 +88,7 @@ foreach($semua_sapi as $key => $s) {
                  $notifikasi[] = [
                      'icon' => 'fas fa-leaf text-emerald-500',
                      'bg' => 'bg-emerald-50/80 border-emerald-100/50',
-                     'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan " . date('d M Y', $waktu_hpl) . " (H-{$sisa_hari_hpl})."
+                     'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan " . tgl_indo(date('Y-m-d', $waktu_hpl)) . " (H-{$sisa_hari_hpl})."
                  ];
              } elseif ($sisa_hari_hpl <= 0) {
                  $notifikasi[] = [
@@ -118,14 +111,18 @@ $allActivities = null;
 
 // Activity Visualization Config
 $activity_config = [
-    'tambah_sapi' => ['icon' => 'fas fa-plus', 'bg' => 'bg-blue-100', 'color' => 'text-blue-500', 'label' => 'Registrasi Sapi'],
-    'tambah_birahi' => ['icon' => 'fas fa-venus-mars', 'bg' => 'bg-pink-100', 'color' => 'text-pink-500', 'label' => 'Birahi Tercatat'],
-    'inseminasi' => ['icon' => 'fas fa-syringe', 'bg' => 'bg-amber-100', 'color' => 'text-amber-500', 'label' => 'Inseminasi Buatan'],
-    'pkb' => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100', 'color' => 'text-purple-500', 'label' => 'Pemeriksaan Kebuntingan'],
-    'kelahiran' => ['icon' => 'fas fa-baby', 'bg' => 'bg-emerald-100', 'color' => 'text-emerald-500', 'label' => 'Kelahiran'],
-    'batal_birahi' => ['icon' => 'fas fa-undo', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal Birahi'],
-    'batal_ib' => ['icon' => 'fas fa-times', 'bg' => 'bg-red-100', 'color' => 'text-red-500', 'label' => 'Batal Inseminasi Buatan'],
-    'edit_sapi' => ['icon' => 'fas fa-edit', 'bg' => 'bg-gray-100', 'color' => 'text-gray-500', 'label' => 'Update Data']
+    'tambah_sapi'   => ['icon' => 'fas fa-plus',        'bg' => 'bg-blue-100',    'color' => 'text-blue-600',    'label' => 'Registrasi Sapi'],
+    'edit_sapi'     => ['icon' => 'fas fa-edit',        'bg' => 'bg-slate-100',   'color' => 'text-slate-600',   'label' => 'Update Data'],
+    'hapus_sapi'    => ['icon' => 'fas fa-trash',       'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Hapus Sapi'],
+    'import_sapi'   => ['icon' => 'fas fa-file-excel',  'bg' => 'bg-green-100',   'color' => 'text-green-700',   'label' => 'Import Excel'],
+    'tambah_birahi' => ['icon' => 'fas fa-venus-mars',  'bg' => 'bg-pink-100',    'color' => 'text-pink-600',    'label' => 'Laporan Birahi'],
+    'batal_birahi'  => ['icon' => 'fas fa-undo',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal Birahi'],
+    'inseminasi'    => ['icon' => 'fas fa-syringe',     'bg' => 'bg-amber-100',   'color' => 'text-amber-600',   'label' => 'Inseminasi (IB)'],
+    'batal_ib'      => ['icon' => 'fas fa-times',       'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal IB'],
+    'pkb'           => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100',  'color' => 'text-purple-600',  'label' => 'Pemeriksaan (PKB)'],
+    'kelahiran'     => ['icon' => 'fas fa-baby',        'bg' => 'bg-emerald-100', 'color' => 'text-emerald-600', 'label' => 'Kelahiran'],
+    'batal_bunting' => ['icon' => 'fas fa-undo',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal Bunting'],
+    'reset_gagal'   => ['icon' => 'fas fa-sync',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Reset Siklus'],
 ];
 ?>
  
@@ -311,12 +308,12 @@ $activity_config = [
                 <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div class="relative border-l-2 border-gray-100 ml-3 space-y-6 pb-4">
                         <?php foreach ($recentActivities as $act): 
-                            $cfg = $activity_config[$act['jenis_aktivitas']] ?? [
+                            $cfg = isset($activity_config[$act['jenis_aktivitas']]) ? $activity_config[$act['jenis_aktivitas']] : array(
                                 'icon' => 'fas fa-info-circle',
                                 'bg' => 'bg-gray-100',
                                 'color' => 'text-gray-500',
                                 'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
-                            ];
+                            );
                             $adminName = htmlspecialchars(explode(' ', $act['nama'])[0]);
                         ?>
                         <div class="relative pl-6 group">
@@ -464,12 +461,12 @@ $activity_config = [
                 // Lazy load: hanya query saat halaman sudah di-render
                 $allActivities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($allActivities as $act): 
-                    $cfg = $activity_config[$act['jenis_aktivitas']] ?? [
+                    $cfg = isset($activity_config[$act['jenis_aktivitas']]) ? $activity_config[$act['jenis_aktivitas']] : array(
                         'icon' => 'fas fa-info-circle',
                         'bg' => 'bg-gray-100',
                         'color' => 'text-gray-500',
                         'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
-                    ];
+                    );
                 ?>
                 <div class="relative pl-8 modal-activity-item">
                     <span class="absolute -left-[18px] top-1 flex h-8 w-8 items-center justify-center rounded-xl <?php echo $cfg['bg']; ?> ring-4 ring-white shadow-sm">

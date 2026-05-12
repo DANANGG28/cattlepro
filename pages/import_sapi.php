@@ -37,6 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_csv'])) {
     
     fclose($handle);
     
+    // Catat aktivitas import ke log
+    if ($success_count > 0) {
+        $sapi->logActivity(
+            $_SESSION['user_id'],
+            'import_sapi',
+            "Import data sapi dari Excel: {$success_count} data berhasil ditambahkan" . ($error_count > 0 ? ", {$error_count} gagal" : "")
+        );
+    }
+    
     $msg = "Import selesai! $success_count data berhasil, $error_count gagal.";
     header("Location: sapi.php?pesan=" . urlencode($msg));
     exit;

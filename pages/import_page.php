@@ -21,61 +21,107 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
             $error = 'Gagal membuka file. Coba lagi.';
         } else {
             $success_count = 0;
-            $error_count = 0;
-            $row_index = 0;
+            $error_count   = 0;
+            $skip_count    = 0;
+            $row_index     = 0;
+            $error_rows    = [];
+            $skip_rows     = [];
 
-            while (($data = fgetcsv($handle, 2000, ',')) !== FALSE) {
+            // Baca baris pertama untuk deteksi delimiter (koma vs titik koma)
+            $first_line = fgets($handle);
+            rewind($handle);
+            $delimiter = (substr_count($first_line, ';') > substr_count($first_line, ',')) ? ';' : ',';
+
+            while (($data = fgetcsv($handle, 2000, $delimiter)) !== FALSE) {
                 $row_index++;
+                if ($row_index == 1) continue; // Skip header
 
-                // Skip header row
-                if ($row_index == 1) continue;
-
-                // Skip empty rows or rows with too few columns
+                // Skip baris kosong atau kurang kolom
                 if (count($data) < 4 || empty(trim($data[0]))) continue;
 
-                // Skip guide/hint rows
-                if (
-                    stripos(trim($data[0]), 'wajib') !== false ||
-                    trim($data[2]) === 'YYYY-MM-DD'
-                ) continue;
+                // Skip baris panduan
+                if (stripos(trim($data[0]), 'wajib') !== false || trim($data[2]) === 'YYYY-MM-DD') continue;
 
-                $sapi->kode_sapi    = substr(trim($data[0]), 0, 50); // Mencegah data kepanjangan
-                $sapi->jenis        = substr(trim($data[1]), 0, 50);
-                $sapi->tanggal_lahir = trim($data[2]);
-                $sapi->berat        = trim($data[3]);
-
-                $status_val      = isset($data[4]) ? trim($data[4]) : 'Kosong';
-                $tanggal_status  = isset($data[5]) ? trim($data[5]) : '';
-
-                $valid_statuses = ['Kosong', 'Sudah Birahi', 'Sudah IB', 'Bunting'];
-                if (!in_array($status_val, $valid_statuses)) {
-                    $status_val = 'Kosong';
+                // Validasi & bersihkan format tanggal lahir
+                $raw_tgl = trim($data[2]);
+                // Coba konversi format d/m/Y atau d-m-Y ke Y-m-d
+                if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $raw_tgl, $m)) {
+                    $raw_tgl = $m[3] . '-' . str_pad($m[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($m[1], 2, '0', STR_PAD_LEFT);
                 }
 
-                $sapi->status_reproduksi = $status_val;
-                $sapi->admin_id = (int)$_SESSION['user_id'];
+                $sapi->kode_sapi         = substr(trim($data[0]), 0, 50);
+                $sapi->jenis             = substr(trim($data[1]), 0, 50);
+                $sapi->tanggal_lahir     = $raw_tgl;
+                $sapi->berat             = (int)trim($data[3]);
+                $status_val              = isset($data[4]) ? trim($data[4]) : 'Kosong';
+                $raw_status_tgl          = isset($data[5]) ? trim($data[5]) : '';
 
-                try {
-                    $new_id = $sapi->create();
-                    if ($new_id) {
-                        $success_count++;
-                        if ($status_val === 'Sudah Birahi' && !empty($tanggal_status)) {
-                            $sapi->createBirahi($new_id, $tanggal_status);
-                        } elseif (in_array($status_val, ['Sudah IB', 'Bunting']) && !empty($tanggal_status)) {
-                            $sapi->setTanggalIB($new_id, $tanggal_status);
-                        }
-                    } else {
-                        $error_count++;
+                // Konversi tanggal_status dari d/m/Y ke Y-m-d juga
+                if (!empty($raw_status_tgl) && preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $raw_status_tgl, $ms)) {
+                    $tanggal_status = $ms[3] . '-' . str_pad($ms[2], 2, '0', STR_PAD_LEFT) . '-' . str_pad($ms[1], 2, '0', STR_PAD_LEFT);
+                } else {
+                    $tanggal_status = $raw_status_tgl;
+                }
+
+                $valid_statuses = ['Kosong', 'Sudah Birahi', 'Sudah IB', 'Bunting'];
+                if (!in_array($status_val, $valid_statuses)) $status_val = 'Kosong';
+
+                $sapi->status_reproduksi = $status_val;
+                $sapi->admin_id          = $_SESSION['user_id'];
+
+                // === VALIDASI DUPLIKAT: skip jika kode_sapi sudah ada ===
+                if ($sapi->kodeSapiExists($sapi->kode_sapi)) {
+                    $skip_count++;
+                    $skip_rows[] = htmlspecialchars($data[0]);
+                    continue;
+                }
+
+                // Jeda antar request untuk menghindari rate limit Firebase
+                if ($row_index > 2) usleep(500000); // 500ms
+
+                $new_id = $sapi->create();
+                if ($new_id) {
+                    $success_count++;
+
+                    // Jeda sebelum panggilan secondary
+                    usleep(400000); // 400ms
+
+                    $secondary_ok = true;
+                    if ($status_val === 'Sudah Birahi' && !empty($tanggal_status)) {
+                        $secondary_ok = $sapi->createBirahi($new_id, $tanggal_status);
+                        // Retry sekali jika gagal
+                        if (!$secondary_ok) { usleep(600000); $sapi->createBirahi($new_id, $tanggal_status); }
+                    } elseif (in_array($status_val, ['Sudah IB', 'Bunting']) && !empty($tanggal_status)) {
+                        // Pass $status_val agar Bunting tidak dioverride ke Sudah IB
+                        $secondary_ok = $sapi->setTanggalIB($new_id, $tanggal_status, $status_val);
+                        // Retry sekali jika gagal
+                        if (!$secondary_ok) { usleep(600000); $sapi->setTanggalIB($new_id, $tanggal_status, $status_val); }
                     }
-                } catch (PDOException $e) {
+                } else {
                     $error_count++;
-                    // Optional: log error message $e->getMessage()
+                    $error_rows[] = "Baris {$row_index}: " . htmlspecialchars($data[0]);
                 }
             }
 
             fclose($handle);
-            if ($success_count > 0 || $error_count > 0) {
-                $pesan = "Import selesai! $success_count data berhasil dimasukkan" . ($error_count > 0 ? ", $error_count baris gagal/dilewati." : ".");
+
+            if ($success_count > 0 || $skip_count > 0) {
+                if ($success_count > 0) {
+                    $sapi->logActivity(
+                        $_SESSION['user_id'],
+                        'import_sapi',
+                        "Import data sapi dari Excel: {$success_count} data berhasil ditambahkan" . ($error_count > 0 ? ", {$error_count} gagal" : "") . ($skip_count > 0 ? ", {$skip_count} dilewati (duplikat)" : "")
+                    );
+                }
+                $pesan = "✅ Import selesai! <strong>{$success_count} data berhasil</strong> dimasukkan.";
+                if ($skip_count > 0) {
+                    $pesan .= " <span class='text-yellow-600'>⚠️ {$skip_count} dilewati (kode sudah ada): " . implode(', ', $skip_rows) . "</span>";
+                }
+                if ($error_count > 0) {
+                    $pesan .= " <span class='text-red-600'>❌ {$error_count} baris gagal.</span>";
+                }
+            } elseif ($error_count > 0) {
+                $error = "❌ Semua {$error_count} baris gagal dimasukkan. Periksa format tanggal (YYYY-MM-DD) dan pastikan semua kolom wajib diisi.";
             } else {
                 $error = "Tidak ada data valid yang bisa di-import. Pastikan file CSV sesuai template.";
             }

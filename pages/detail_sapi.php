@@ -11,7 +11,7 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-$id_sapi = intval($_GET['id']);
+$id_sapi = $_GET['id'];
 $data_sapi = $sapi->getById($id_sapi);
 
 if (!$data_sapi) {
@@ -25,9 +25,10 @@ if (isset($_GET['hapus_birahi'])) {
         if ((isset($data_sapi['status_reproduksi']) ? $data_sapi['status_reproduksi'] : 'Kosong') == 'Sudah Birahi') {
             $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
         }
-        $_SESSION['flash_pesan'] = "Data birahi berhasil dihapus.";
+        header("Location: detail_sapi.php?id={$id_sapi}&pesan=" . urlencode("Data arsip birahi berhasil dihapus."));
+    } else {
+        header("Location: detail_sapi.php?id={$id_sapi}&error=" . urlencode("Gagal menghapus arsip birahi."));
     }
-    header("Location: detail_sapi.php?id=" . $id_sapi);
     exit;
 }
 
@@ -36,14 +37,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Input Birahi
     if (isset($_POST['simpan_birahi'])) {
-        $tanggal_birahi = trim($_POST['tanggal_birahi']) . ' ' . date('H:i:s');
-        if(!empty($_POST['waktu_birahi'])){
-            $time_part = trim($_POST['waktu_birahi']);
-            if (strlen($time_part) == 5) $time_part .= ':00';
-            $tanggal_birahi = trim($_POST['tanggal_birahi']) . ' ' . $time_part;
+        // Firebase schema: tanggalBirahi is type Date, so ONLY send YYYY-MM-DD
+        $tanggal_birahi = trim($_POST['tanggal_birahi']);
+        // Strip any time component if accidentally included
+        if (strlen($tanggal_birahi) > 10) {
+            $tanggal_birahi = substr($tanggal_birahi, 0, 10);
         }
         $sapi->createBirahi($id_sapi, $tanggal_birahi);
-        $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
+        // createBirahi already calls updateStatusReproduksi internally
         $sapi->logActivity($_SESSION['user_id'], 'tambah_birahi', "Mencatat birahi sapi: {$data_sapi['kode_sapi']}");
         
         // ---- Trigger WA Notification (Fonnte) ----
@@ -79,13 +80,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // ------------------------------------------
 
         $_SESSION['flash_pesan'] = "Data birahi ditambahkan. Status sapi: Sudah Birahi.";
+        $flash_msg = "Data birahi ditambahkan. Status sapi: Sudah Birahi.";
     }
 
     // Input Inseminasi
     if (isset($_POST['simpan_ib'])) {
         $tgl_ib = str_replace('T', ' ', trim($_POST['tanggal_ib']));
         if (strlen($tgl_ib) == 16) $tgl_ib .= ':00';
-        $sapi->setTanggalIB($id_sapi, $tgl_ib);
+        $tgl_ib_iso = date('c', strtotime($tgl_ib));
+        $sapi->setTanggalIB($id_sapi, $tgl_ib_iso);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
         $sapi->logActivity($_SESSION['user_id'], 'inseminasi', "Melakukan IB pada sapi: {$data_sapi['kode_sapi']}");
         
@@ -118,7 +121,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         send_telegram($pesan_tele);
         // ------------------------------------------
 
-        $_SESSION['flash_pesan'] = "Data Inseminasi divalidasi. Status sapi: Sudah IB.";
+        $flash_msg = "Data Inseminasi divalidasi. Status sapi: Sudah IB.";
     }
 
     // Input PKB
@@ -129,11 +132,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($hasil == 'Bunting') {
             $sapi->updateStatusReproduksi($id_sapi, 'Bunting');
-            $_SESSION['flash_pesan'] = "Selamat! Sapi dinyatakan Bunting.";
+            $flash_msg = "Selamat! Sapi dinyatakan Bunting.";
             
             // Jadwal HPL (283 hari dari IB)
-            $waktu_ib = strtotime($data_sapi['tanggal_ib']);
-            $waktu_hpl = date('d M Y', $waktu_ib + (283 * 24 * 3600));
+            $waktu_ib = strtotime(isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '');
+            $waktu_hpl = tgl_indo(date('Y-m-d', $waktu_ib + (283 * 24 * 3600)));
 
             $pesan = "🎉 *Sapi Positif Bunting!*\n";
             $pesan .= "Sapi *{$kode_sapi}* dinyatakan Hamil setelah pemeriksaan PKB.\n\n";
@@ -144,14 +147,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } elseif ($hasil == 'Gagal') {
             $sapi->updateStatusReproduksi($id_sapi, 'Gagal Hamil');
             $sapi->setTanggalIB($id_sapi, null);
-            $_SESSION['flash_pesan'] = "Sapi gagal hamil. Status diubah: Gagal Hamil.";
+            $flash_msg = "Sapi gagal hamil. Status diubah: Gagal Hamil.";
             
             $pesan = "⚠️ *Hasil PKB: Gagal Hamil*\n";
             $pesan .= "Sapi *{$kode_sapi}* dinyatakan tidak hamil/gagal. Silakan evaluasi kondisi kesehatan sapi.";
         } else {
             $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
             $sapi->setTanggalIB($id_sapi, null);
-            $_SESSION['flash_pesan'] = "Sapi tidak bunting. Status kembali: Kosong.";
+            $flash_msg = "Sapi tidak bunting. Status kembali: Kosong.";
             
             $pesan = "ℹ️ *Hasil PKB: Tidak Bunting*\n";
             $pesan .= "Sapi *{$kode_sapi}* kembali ke status Kosong.";
@@ -167,7 +170,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Jika Bunting, Kirim Pengingat Kelahiran (H-7 dan hari-H HPL)
         if ($hasil == 'Bunting') {
-            $delay_hpl = strtotime($data_sapi['tanggal_ib']) + (283 * 24 * 3600) - time();
+            $waktu_ib_val = strtotime(isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '');
+            $delay_hpl = ($waktu_ib_val > 0) ? ($waktu_ib_val + (283 * 24 * 3600) - time()) : 0;
             if ($delay_hpl > 0) {
                 send_wa($nomor_tujuan, "📢 *PENGINGAT HARI PERKIRAAN LAHIR*\nSapi *{$kode_sapi}* diprediksi akan melahirkan hari ini. Mohon pantau kondisi indukan!", $delay_hpl);
             }
@@ -197,7 +201,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         send_telegram($pesan_tele);
         // ------------------------------------------
 
-        $_SESSION['flash_pesan'] = "Data kelahiran dicatat. Status sapi kembali: Kosong.";
+        $flash_msg = "Data kelahiran dicatat. Status sapi kembali: Kosong.";
     }
 
     // Batal Birahi
@@ -208,7 +212,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
         $sapi->logActivity($_SESSION['user_id'], 'batal_birahi', "Membatalkan laporan birahi sapi: {$data_sapi['kode_sapi']}");
-        $_SESSION['flash_pesan'] = "Status birahi dibatalkan. Kembali ke tahap kosong.";
+        $flash_msg = "Status birahi dibatalkan. Kembali ke tahap kosong.";
     }
 
     // Batal IB
@@ -216,34 +220,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sapi->setTanggalIB($id_sapi, null);
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah Birahi');
         $sapi->logActivity($_SESSION['user_id'], 'batal_ib', "Membatalkan laporan Inseminasi Buatan sapi: {$data_sapi['kode_sapi']}");
-        $_SESSION['flash_pesan'] = "Laporan Inseminasi Buatan dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
+        $flash_msg = "Laporan Inseminasi Buatan dibatalkan. Sapi kembali ke tahap Sudah Birahi.";
     }
 
     // Batal Bunting
     if (isset($_POST['batal_bunting'])) {
         $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
         $sapi->logActivity($_SESSION['user_id'], 'batal_bunting', "Membatalkan status bunting sapi: {$data_sapi['kode_sapi']}");
-        $_SESSION['flash_pesan'] = "Status bunting dibatalkan. Sapi kembali ke tahap Sudah IB.";
+        $flash_msg = "Status bunting dibatalkan. Sapi kembali ke tahap Sudah IB.";
     }
 
     // Reset Gagal Hamil
     if (isset($_POST['reset_gagal'])) {
         $sapi->updateStatusReproduksi($id_sapi, 'Kosong');
         $sapi->logActivity($_SESSION['user_id'], 'reset_gagal', "Mereset status gagal hamil sapi: {$data_sapi['kode_sapi']}");
-        $_SESSION['flash_pesan'] = "Status gagal hamil direset. Sapi kembali ke tahap Kosong.";
+        $flash_msg = "Status gagal hamil direset. Sapi kembali ke tahap Kosong.";
     }
 
     // PRG: Redirect setelah semua POST selesai
-    header("Location: detail_sapi.php?id=" . $id_sapi);
+    $msg_param = !empty($flash_msg) ? '&pesan=' . urlencode($flash_msg) : '';
+    header("Location: detail_sapi.php?id={$id_sapi}" . $msg_param);
     exit;
 }
 
-// --- Flash message dari session (setelah redirect) ---
-$pesan = null;
-if (isset($_SESSION['flash_pesan'])) {
-    $pesan = $_SESSION['flash_pesan'];
-    unset($_SESSION['flash_pesan']);
-}
+// (flash message sekarang ditangani via ?pesan= URL param oleh sidebar.php)
 
 // Ambil histori birahi setelah semua proses POST/GET selesei
 $histori_birahi = $sapi->getBirahiByIdSapi($id_sapi);
@@ -277,18 +277,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
 
     <main class="p-4 pb-36 md:p-6 md:pb-6 space-y-6 w-full">
         
-        <?php if(!empty($pesan)): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl relative flex items-center gap-2 text-sm">
-                <i class="fas fa-check-circle"></i>
-                <span><?php echo $pesan; ?></span>
-            </div>
-        <?php endif; ?>
-        <?php if(isset($error)): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative flex items-center gap-2 text-sm">
-                <i class="fas fa-exclamation-circle"></i>
-                <span><?php echo $error; ?></span>
-            </div>
-        <?php endif; ?>
+
 
         <!-- Card: Informasi Utama -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -356,28 +345,53 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     </div>
                 </div>
             <?php elseif ($status == 'Sudah Birahi'): ?>
-                <?php
+                <!-- Card: Jadwal Inseminasi Buatan Optimal -->
+                <?php 
                 $latest_birahi = $sapi->getLatestBirahi($id_sapi);
-                $waktu_ib_text = '-';
+                $jadwal_ib = '-';
+                $instruksi = 'Belum ada data birahi aktif untuk menghitung jadwal.';
+                $status_color = 'text-pink-300';
+
                 if ($latest_birahi) {
-                    $waktu_birahi = strtotime($latest_birahi['tanggal_birahi']);
-                    $waktu_ib = $waktu_birahi + (12 * 3600);
-                    $waktu_ib_text = tgl_indo(date('Y-m-d H:i:s', $waktu_ib), true);
+                    $waktu_birahi = strtotime($latest_birahi['tanggalBirahi']);
+                    $waktu_ib_awal = $waktu_birahi + (12 * 3600); // 12 Jam
+                    $waktu_ib_akhir = $waktu_birahi + (18 * 3600); // 18 Jam
+                    
+                    $jadwal_ib = tgl_indo(date('Y-m-d', $waktu_ib_awal)) . ' (' . date('H:i', $waktu_ib_awal) . ' - ' . date('H:i', $waktu_ib_akhir) . ')';
+                    $instruksi = 'Lakukan Inseminasi Buatan dalam rentang waktu di atas untuk peluang keberhasilan tertinggi.';
+                    $status_color = 'text-pink-600';
+                    
+                    // Check if expired
+                    if (time() > $waktu_ib_akhir) {
+                        $instruksi = 'Waktu optimal telah terlewati. Segera lakukan pengecekan atau tunggu siklus berikutnya.';
+                        $status_color = 'text-red-500';
+                    }
                 }
                 ?>
-                <div class="p-4 rounded-xl mb-6 bg-pink-50 border border-pink-100 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-info-circle mt-0.5 text-lg text-pink-500"></i>
-                        <div class="text-sm">
-                            <p class="font-bold text-pink-700 mb-1">Jadwal Inseminasi Buatan Optimal:</p>
-                            <p class="text-gray-700"><?php echo $waktu_ib_text; ?></p>
-                            <p class="text-xs text-pink-400 mt-1">(12 Jam setelah terdeteksi birahi)</p>
+                <div class="bg-pink-50 border-l-4 border-pink-500 p-5 rounded-2xl mb-8">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 mt-1 shadow-sm">
+                            <i class="fas fa-clock text-lg"></i>
                         </div>
+                        <div class="flex-1">
+                            <h5 class="font-bold text-pink-800 text-sm uppercase tracking-wider mb-1">Jadwal Inseminasi Buatan Optimal:</h5>
+                            <p class="font-extrabold text-2xl <?php echo $status_color; ?> mb-1">
+                                <?php echo $jadwal_ib; ?>
+                            </p>
+                            <p class="text-xs text-pink-500 font-medium opacity-80 flex items-center gap-1">
+                                <i class="fas fa-info-circle text-[10px]"></i> <?php echo $instruksi; ?>
+                            </p>
+                        </div>
+                        <?php if ($latest_birahi): ?>
+                        <div class="hidden md:block">
+                            <span class="px-3 py-1 rounded-full bg-pink-200 text-pink-700 text-[10px] font-bold uppercase">Estimasi 12-18 Jam</span>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php elseif ($status == 'Sudah IB'): ?>
                 <?php
-                $waktu_ib = strtotime($data_sapi['tanggal_ib']);
+                $waktu_ib = strtotime(isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '');
                 $waktu_pantau = $waktu_ib + (21 * 24 * 3600);
                 $waktu_pkb = $waktu_ib + (60 * 24 * 3600);
                 ?>
@@ -387,30 +401,43 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                         <div class="text-sm space-y-3">
                             <div>
                                 <p class="font-bold text-blue-700">Pantau Birahi Ulang (H+21):</p>
-                                <p class="text-gray-700"><?php echo date('d M Y', $waktu_pantau); ?></p>
+                                <p class="text-gray-700"><?php echo tgl_indo(date('Y-m-d', $waktu_pantau)); ?></p>
                             </div>
                             <div>
                                 <p class="font-bold text-purple-700">Jadwal Pemeriksaan Kebuntingan (H+60):</p>
-                                <p class="text-gray-700"><?php echo date('d M Y', $waktu_pkb); ?></p>
+                                <p class="text-gray-700"><?php echo tgl_indo(date('Y-m-d', $waktu_pkb)); ?></p>
                             </div>
                         </div>
                     </div>
                 </div>
             <?php elseif ($status == 'Bunting'): ?>
                 <?php
-                $waktu_ib = strtotime($data_sapi['tanggal_ib']);
-                $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
+                $tgl_ib_raw = isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '';
+                $waktu_ib = strtotime($tgl_ib_raw);
+                if ($waktu_ib > 0):
+                    $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
                 ?>
                 <div class="p-4 rounded-xl mb-6 bg-green-50 border border-green-100 shadow-sm">
                     <div class="flex items-start gap-3">
                         <i class="fas fa-info-circle mt-0.5 text-lg text-green-500"></i>
                         <div class="text-sm">
                             <p class="font-bold text-green-700 mb-1">Hari Perkiraan Lahir:</p>
-                            <p class="text-gray-700"><?php echo date('d M Y', $waktu_hpl); ?></p>
-                            <p class="text-xs text-green-400 mt-1">(283 hari sejak Inseminasi Buatan)</p>
+                            <p class="text-gray-700"><?php echo tgl_indo(date('Y-m-d', $waktu_hpl)); ?></p>
+                            <p class="text-xs text-green-400 mt-1">(283 hari sejak Inseminasi Buatan: <?php echo tgl_indo(date('Y-m-d', $waktu_ib)); ?>)</p>
                         </div>
                     </div>
                 </div>
+                <?php else: ?>
+                <div class="p-4 rounded-xl mb-6 bg-yellow-50 border border-yellow-100 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-exclamation-triangle mt-0.5 text-lg text-yellow-600"></i>
+                        <div class="text-sm">
+                            <p class="font-bold text-yellow-700 mb-1">Data IB Tidak Ditemukan</p>
+                            <p class="text-gray-600">Sapi berstatus Bunting namun tanggal Inseminasi Buatan tidak tercatat. Mohon periksa kembali data riwayat.</p>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             <?php elseif ($status == 'Gagal Hamil'): ?>
                 <div class="p-4 rounded-xl mb-6 bg-red-50 border border-red-100 shadow-sm">
                     <div class="flex items-start gap-3">
@@ -429,17 +456,17 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
                         <i class="fas fa-plus-circle text-pink-500"></i> Form Lapor Birahi
                     </h4>
-                    <form method="POST" class="flex flex-col md:flex-row gap-3">
-                        <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Tanggal Mulai Birahi</label>
-                            <input type="date" name="tanggal_birahi" value="<?php echo date('Y-m-d'); ?>" required class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-pink-500 focus:border-pink-500">
+                    <form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Tanggal Mulai Birahi</label>
+                            <input type="date" name="tanggal_birahi" value="<?php echo date('Y-m-d'); ?>" required class="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 outline-none transition">
                         </div>
-                        <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Jam (Opsional)</label>
-                            <input type="time" name="waktu_birahi" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-pink-500 focus:border-pink-500">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Jam (Opsional)</label>
+                            <input type="time" name="waktu_birahi" class="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 outline-none transition">
                         </div>
                         <div class="flex items-end">
-                            <button type="submit" name="simpan_birahi" class="flex items-center justify-center gap-2 bg-pink-500 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-pink-600 transition shadow-md w-full md:w-auto h-[42px]"><i class="fas fa-save"></i> Simpan Birahi</button>
+                            <button type="submit" name="simpan_birahi" class="w-full bg-pink-500 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-pink-600 transition shadow-lg shadow-pink-100 flex items-center justify-center gap-2 h-[42px]"><i class="fas fa-save"></i> Simpan Birahi</button>
                         </div>
                     </form>
                 </div>
@@ -448,14 +475,16 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
                         <i class="fas fa-syringe text-blue-500"></i> Lapor Tindakan Inseminasi Buatan
                     </h4>
-                    <form method="POST" class="flex flex-col md:flex-row gap-3">
-                        <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Tanggal Implementasi Inseminasi Buatan</label>
-                            <input type="datetime-local" name="tanggal_ib" value="<?php echo date('Y-m-d\TH:i'); ?>" required class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                    <form id="form-batal-birahi" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Tanggal Implementasi Inseminasi Buatan</label>
+                            <input type="datetime-local" name="tanggal_ib" value="<?php echo date('Y-m-d\TH:i'); ?>" required class="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                         </div>
-                        <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-                            <button type="submit" name="simpan_ib" class="flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-blue-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Data Inseminasi Buatan</button>
-                            <button type="submit" name="batal_birahi" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan status Sudah Birahi dan menghapus log birahi terakhir?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan birahi"><i class="fas fa-undo"></i> Batal</button>
+                        <div class="flex gap-2 w-full">
+                            <button type="submit" name="simpan_ib" class="flex-1 bg-blue-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2 h-[42px] text-sm"><i class="fas fa-save"></i> Simpan Data IB</button>
+                            <button type="button" id="btn-batal-birahi"
+                                onclick="CP.confirm('Batalkan status Sudah Birahi dan hapus log birahi terakhir?', function(){ var f=document.getElementById('form-batal-birahi'); var i=document.createElement('input'); i.type='hidden'; i.name='batal_birahi'; i.value='1'; f.appendChild(i); f.submit(); }, {title:'Batalkan Birahi?', icon:'question', danger:true, confirmText:'<i class=\'fas fa-undo mr-1\'></i> Ya, Batalkan'})"
+                                class="px-4 bg-white border border-red-500 text-red-500 font-bold rounded-xl hover:bg-red-50 transition h-[42px] flex items-center justify-center" title="Batalkan laporan birahi"><i class="fas fa-undo"></i></button>
                         </div>
                     </form>
                 </div>
@@ -465,18 +494,20 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
                         <i class="fas fa-stethoscope text-purple-600"></i> Hasil Pemeriksaan Kebuntingan
                     </h4>
-                    <form method="POST" class="flex flex-col md:flex-row gap-3 items-end">
-                        <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Status Hasil Pemeriksaan Kebuntingan</label>
-                            <select name="hasil_pkb" class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-purple-500 focus:border-purple-500">
+                    <form id="form-batal-ib" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Status Hasil Pemeriksaan Kebuntingan</label>
+                            <select name="hasil_pkb" class="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 outline-none transition appearance-none bg-white">
                                 <option value="Bunting">Bunting (Positif)</option>
                                 <option value="Tidak">Tidak Bunting (Negatif)</option>
                                 <option value="Gagal">Gagal Hamil</option>
                             </select>
                         </div>
-                        <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-                            <button type="submit" name="simpan_pkb" class="flex items-center justify-center gap-2 bg-purple-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-purple-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Simpan Hasil Pemeriksaan Kebuntingan</button>
-                            <button type="submit" name="batal_ib" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan laporan Inseminasi Buatan dan kembali ke tahap Sudah Birahi?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan Inseminasi Buatan"><i class="fas fa-undo"></i> Batal</button>
+                        <div class="flex gap-2 w-full">
+                            <button type="submit" name="simpan_pkb" class="flex-1 bg-purple-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-purple-700 transition shadow-lg shadow-purple-100 flex items-center justify-center gap-2 h-[42px] text-sm"><i class="fas fa-save"></i> Simpan Hasil PKB</button>
+                            <button type="button"
+                                onclick="CP.confirm('Batalkan laporan Inseminasi Buatan dan kembali ke tahap Sudah Birahi?', function(){ var f=document.getElementById('form-batal-ib'); var i=document.createElement('input'); i.type='hidden'; i.name='batal_ib'; i.value='1'; f.appendChild(i); f.submit(); }, {title:'Batalkan IB?', icon:'question', danger:true, confirmText:'<i class=\'fas fa-undo mr-1\'></i> Ya, Batalkan'})"
+                                class="px-4 bg-white border border-red-500 text-red-500 font-bold rounded-xl hover:bg-red-50 transition h-[42px] flex items-center justify-center" title="Batalkan laporan IB"><i class="fas fa-undo"></i></button>
                         </div>
                     </form>
                 </div>
@@ -485,14 +516,16 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
                         <i class="fas fa-baby-carriage text-green-500"></i> Pelaporan Kelahiran Sapi
                     </h4>
-                    <form method="POST" class="flex flex-col md:flex-row gap-3">
-                        <div class="flex-1">
-                            <label class="block text-xs text-gray-500 mb-1">Tanggal Indukan Melahirkan</label>
-                            <input type="date" name="tanggal_kelahiran" value="<?php echo date('Y-m-d'); ?>" required class="w-full border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-green-500 focus:border-green-500">
+                    <form id="form-batal-bunting" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Tanggal Indukan Melahirkan</label>
+                            <input type="date" name="tanggal_kelahiran" value="<?php echo date('Y-m-d'); ?>" required class="w-full border border-gray-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-green-500 outline-none transition">
                         </div>
-                        <div class="flex flex-col md:flex-row items-end gap-2 w-full md:w-auto">
-                            <button type="submit" name="simpan_kelahiran" class="flex items-center justify-center gap-2 bg-green-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-green-700 transition shadow-md w-full md:w-auto h-[42px] whitespace-nowrap"><i class="fas fa-save"></i> Laporkan Kelahiran</button>
-                            <button type="submit" name="batal_bunting" formnovalidate onclick="return confirm('Apakah Anda yakin ingin membatalkan status Bunting dan kembali ke tahap Sudah Inseminasi Buatan?');" class="flex items-center justify-center gap-2 bg-white border border-red-500 text-red-500 font-semibold py-2 px-4 rounded-lg hover:bg-red-50 transition shadow-sm w-full md:w-auto h-[42px]" title="Batalkan laporan Bunting"><i class="fas fa-undo"></i> Batal</button>
+                        <div class="flex gap-2 w-full">
+                            <button type="submit" name="simpan_kelahiran" class="flex-1 bg-green-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-2 h-[42px] text-sm"><i class="fas fa-save"></i> Laporkan Kelahiran</button>
+                            <button type="button"
+                                onclick="CP.confirm('Batalkan status Bunting dan kembali ke tahap Sudah Inseminasi Buatan?', function(){ var f=document.getElementById('form-batal-bunting'); var i=document.createElement('input'); i.type='hidden'; i.name='batal_bunting'; i.value='1'; f.appendChild(i); f.submit(); }, {title:'Batalkan Bunting?', icon:'question', danger:true, confirmText:'<i class=\'fas fa-undo mr-1\'></i> Ya, Batalkan'})"
+                                class="px-4 bg-white border border-red-500 text-red-500 font-bold rounded-xl hover:bg-red-50 transition h-[42px] flex items-center justify-center" title="Batalkan status Bunting"><i class="fas fa-undo"></i></button>
                         </div>
                     </form>
                 </div>
@@ -512,57 +545,60 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
         </div>
 
         <!-- Card: Riwayat Reproduksi (Vertical Timeline) -->
-        <div class="bg-[#0A3622] rounded-2xl shadow-xl p-6 relative overflow-hidden">
-            <!-- Glassmorphism decorative elements -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full filter blur-[80px] -translate-y-1/2 translate-x-1/3"></div>
-            <div class="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/20 rounded-full filter blur-[60px] translate-y-1/3 -translate-x-1/4"></div>
-            
-            <h4 class="font-bold text-white mb-6 flex items-center gap-2 relative z-10 text-lg">
-                <i class="fas fa-stream text-[#00D084]"></i> Riwayat Reproduksi (Timeline)
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h4 class="font-bold text-gray-800 mb-6 flex items-center gap-2 text-lg">
+                <i class="fas fa-history text-emerald-500"></i> Riwayat Aktivitas Sapi
             </h4>
             
-            <div class="relative z-10 pl-3">
-                <div class="absolute left-[19px] top-2 bottom-2 w-0.5 bg-white/10"></div>
+            <div class="relative pl-3">
+                <div class="absolute left-[19px] top-2 bottom-2 w-0.5 bg-gray-100"></div>
                 <div class="space-y-6">
                     <?php if(count($riwayat_aktivitas) > 0): ?>
-                        <?php foreach($riwayat_aktivitas as $log): 
+                        <?php 
+                        $activity_config = [
+                            'tambah_sapi' => ['icon' => 'fas fa-plus', 'bg' => 'bg-blue-50', 'color' => 'text-blue-500', 'label' => 'Registrasi Sapi'],
+                            'edit_sapi' => ['icon' => 'fas fa-edit', 'bg' => 'bg-gray-50', 'color' => 'text-gray-500', 'label' => 'Update Data'],
+                            'hapus_sapi' => ['icon' => 'fas fa-trash', 'bg' => 'bg-red-50', 'color' => 'text-red-500', 'label' => 'Hapus Sapi'],
+                            'tambah_birahi' => ['icon' => 'fas fa-venus-mars', 'bg' => 'bg-pink-50', 'color' => 'text-pink-500', 'label' => 'Laporan Birahi'],
+                            'batal_birahi' => ['icon' => 'fas fa-undo', 'bg' => 'bg-red-50', 'color' => 'text-red-500', 'label' => 'Batal Birahi'],
+                            'inseminasi' => ['icon' => 'fas fa-syringe', 'bg' => 'bg-amber-50', 'color' => 'text-amber-500', 'label' => 'Inseminasi (IB)'],
+                            'batal_ib' => ['icon' => 'fas fa-times', 'bg' => 'bg-red-50', 'color' => 'text-red-500', 'label' => 'Batal IB'],
+                            'pkb' => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-50', 'color' => 'text-purple-500', 'label' => 'Pemeriksaan (PKB)'],
+                            'kelahiran' => ['icon' => 'fas fa-baby', 'bg' => 'bg-emerald-50', 'color' => 'text-emerald-500', 'label' => 'Kelahiran'],
+                            'batal_bunting' => ['icon' => 'fas fa-undo', 'bg' => 'bg-red-50', 'color' => 'text-red-500', 'label' => 'Batal Bunting'],
+                            'reset_gagal' => ['icon' => 'fas fa-sync', 'bg' => 'bg-red-50', 'color' => 'text-red-500', 'label' => 'Reset Siklus']
+                        ];
+                        
+                        foreach($riwayat_aktivitas as $log): 
                             $jenis = $log['jenis'];
-                            // Tentukan ikon dan warna berdasarkan jenis aktivitas
-                            $icon = "fas fa-info";
-                            $bg_color = "bg-gray-500/20";
-                            $text_color = "text-gray-300";
-                            
-                            if (strpos($jenis, 'birahi') !== false) {
-                                $icon = "fas fa-calendar-alt"; $bg_color = "bg-pink-500/20"; $text_color = "text-pink-400";
-                            } elseif (strpos($jenis, 'inseminasi') !== false || strpos($jenis, 'ib') !== false) {
-                                $icon = "fas fa-syringe"; $bg_color = "bg-blue-500/20"; $text_color = "text-blue-400";
-                            } elseif (strpos($jenis, 'pkb') !== false) {
-                                $icon = "fas fa-stethoscope"; $bg_color = "bg-purple-500/20"; $text_color = "text-purple-400";
-                            } elseif (strpos($jenis, 'bunting') !== false) {
-                                $icon = "fas fa-baby"; $bg_color = "bg-green-500/20"; $text_color = "text-green-400";
-                            } elseif (strpos($jenis, 'kelahiran') !== false) {
-                                $icon = "fas fa-baby-carriage"; $bg_color = "bg-emerald-500/20"; $text_color = "text-emerald-400";
-                            } elseif (strpos($jenis, 'gagal') !== false) {
-                                $icon = "fas fa-times-circle"; $bg_color = "bg-red-500/20"; $text_color = "text-red-400";
-                            } else {
-                                $icon = "fas fa-check"; $bg_color = "bg-emerald-500/20"; $text_color = "text-[#00D084]";
-                            }
+                            $cfg = isset($activity_config[$jenis]) ? $activity_config[$jenis] : array(
+                                'icon' => 'fas fa-info-circle',
+                                'bg' => 'bg-gray-50',
+                                'color' => 'text-gray-400',
+                                'label' => str_replace('_', ' ', ucwords($jenis))
+                            );
                         ?>
                         <div class="relative pl-8">
-                            <span class="absolute -left-3 top-1 flex h-8 w-8 items-center justify-center rounded-full <?php echo $bg_color; ?> border border-white/10 backdrop-blur-md">
-                                <i class="<?php echo $icon; ?> text-[13px] <?php echo $text_color; ?>"></i>
+                            <span class="absolute -left-3 top-1 flex h-8 w-8 items-center justify-center rounded-xl <?php echo $cfg['bg']; ?> border border-gray-100 shadow-sm">
+                                <i class="<?php echo $cfg['icon']; ?> text-[13px] <?php echo $cfg['color']; ?>"></i>
                             </span>
-                            <div class="bg-white/5 border border-white/10 backdrop-blur-sm rounded-xl p-4 transition hover:bg-white/10">
-                                <p class="text-sm text-gray-200"><?php echo htmlspecialchars($log['deskripsi']); ?></p>
-                                <div class="flex items-center gap-2 mt-2 text-xs text-gray-400">
-                                    <i class="far fa-clock"></i>
-                                    <span><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></span>
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-xl p-4 transition hover:bg-gray-50">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h5 class="font-bold text-gray-800 text-sm"><?php echo $cfg['label']; ?></h5>
+                                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider"><?php echo date('d M Y, H:i', strtotime($log['created_at'])); ?></span>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-2"><?php echo htmlspecialchars($log['deskripsi']); ?></p>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-[8px] text-white font-bold">
+                                        <?php echo strtoupper(substr($log['nama'], 0, 1)); ?>
+                                    </div>
+                                    <span class="text-[11px] font-bold text-gray-500 uppercase tracking-tight"><?php echo htmlspecialchars($log['nama']); ?></span>
                                 </div>
                             </div>
                         </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="pl-6 text-sm text-gray-400 italic">Belum ada riwayat reproduksi.</div>
+                        <div class="pl-6 text-sm text-gray-400 italic">Belum ada riwayat aktivitas.</div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -570,33 +606,40 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
 
         <!-- Card: Arsip Histori Birahi -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h4 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <i class="fas fa-history text-gray-400"></i> Arsip Histori Birahi (Khusus Diagnostik)
+            <h4 class="font-bold text-gray-800 mb-5 flex items-center gap-2 text-lg">
+                <i class="fas fa-venus-mars text-pink-500"></i> Histori Birahi (Arsip)
             </h4>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm border-collapse">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="p-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Tanggal Birahi Deteksi</th>
-                            <th class="p-3 font-bold text-gray-500 text-xs uppercase tracking-wider">Tercatat Pada</th>
-                            <th class="p-3 font-bold text-gray-500 text-xs uppercase tracking-wider text-center">Aksi</th>
+                        <tr class="bg-gray-50/50 border-y border-gray-100">
+                            <th class="p-4 font-bold text-gray-400 text-xs uppercase tracking-widest">Waktu Deteksi Birahi</th>
+                            <th class="p-4 font-bold text-gray-400 text-xs uppercase tracking-widest">Data Dicatat Pada</th>
+                            <th class="p-4 font-bold text-gray-400 text-xs uppercase tracking-widest text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
                         <?php if($histori_birahi->rowCount() > 0): ?>
                             <?php while($row = $histori_birahi->fetch(PDO::FETCH_ASSOC)): ?>
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="p-3 font-medium text-pink-600"><?php echo tgl_indo($row['tanggal_birahi'], true); ?></td>
-                                <td class="p-3 text-gray-400"><?php echo tgl_indo($row['created_at'], true); ?></td>
-                                <td class="p-3 text-center">
-                                    <a href="?id=<?php echo $id_sapi; ?>&hapus_birahi=<?php echo $row['id']; ?>" onclick="return confirm('Hapus archieve data birahi ini?')" title="Hapus" class="text-red-400 hover:text-red-600 transition">
-                                        <i class="fas fa-trash"></i>
+                            <tr class="hover:bg-gray-50/30 transition">
+                                <td class="p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-500">
+                                            <i class="fas fa-venus-mars text-xs"></i>
+                                        </div>
+                                        <span class="font-bold text-gray-700"><?php echo tgl_indo($row['tanggal_birahi']); ?></span>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-gray-400 font-medium"><?php echo tgl_indo($row['created_at'], true); ?></td>
+                                <td class="p-4 text-center">
+                                    <a href="?id=<?php echo $id_sapi; ?>&hapus_birahi=<?php echo $row['id']; ?>" data-confirm-delete="Hapus arsip birahi tanggal <?php echo tgl_indo($row['tanggal_birahi']); ?>?" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center inline-flex">
+                                        <i class="fas fa-trash-alt text-xs"></i>
                                     </a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
-                            <tr><td colspan="3" class="p-4 text-center text-gray-400 italic text-sm">Belum ada histori birahi.</td></tr>
+                            <tr><td colspan="3" class="p-10 text-center text-gray-400 italic text-sm">Belum ada histori birahi yang tercatat.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>

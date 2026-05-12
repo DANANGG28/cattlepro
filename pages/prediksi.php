@@ -38,12 +38,13 @@ foreach ($semua_sapi as $s) {
         ];
     } elseif ($status == 'Sudah Birahi') {
         $latest_birahi = $sapi->getLatestBirahi($s['id']);
-        if ($latest_birahi) {
-            $waktu_birahi = strtotime($latest_birahi['tanggal_birahi']);
-            $item['update_terakhir'] = 'Birahi: ' . tgl_indo(date('Y-m-d H:i:s', $waktu_birahi), true);
-            $waktu_ib_optimal = $waktu_birahi + (12 * 3600);
+        if ($latest_birahi && isset($latest_birahi['tanggalBirahi'])) {
+            $waktu_birahi = strtotime($latest_birahi['tanggalBirahi']);
+            $item['update_terakhir'] = 'Birahi: ' . tgl_indo(date('Y-m-d', $waktu_birahi));
+            $waktu_ib_awal = $waktu_birahi + (12 * 3600);
+            $waktu_ib_akhir = $waktu_birahi + (18 * 3600);
             $item['jadwal_detail'] = [
-                ['label' => 'Jadwal IB Optimal:', 'date' => tgl_indo(date('Y-m-d H:i:s', $waktu_ib_optimal), true), 'color' => 'text-pink-700']
+                ['label' => 'Jadwal IB Optimal:', 'date' => tgl_indo(date('Y-m-d', $waktu_ib_awal)) . ' (' . date('H:i', $waktu_ib_awal) . ' - ' . date('H:i', $waktu_ib_akhir) . ')', 'color' => 'text-pink-700']
             ];
         }
     } elseif ($status == 'Bunting' && $item['tanggal_ib']) {
@@ -154,7 +155,7 @@ foreach ($semua_sapi as $s) {
                     <tbody class="divide-y divide-gray-50" id="tableBody">
                         <?php if (count($monitoring_data) > 0): ?>
                             <?php foreach ($monitoring_data as $item): ?>
-                            <?php $badge = $status_colors[$item['status_reproduksi']] ?? $status_colors['Kosong']; ?>
+                            <?php $badge = isset($status_colors[$item['status_reproduksi']]) ? $status_colors[$item['status_reproduksi']] : $status_colors['Kosong']; ?>
                             <tr class="hover:bg-gray-50/50 transition pemeriksaan-row">
                                 <td class="p-4">
                                     <p class="font-bold text-slate-800 text-base search-target"><?php echo htmlspecialchars($item['kode_sapi']); ?></p>
@@ -171,17 +172,30 @@ foreach ($semua_sapi as $s) {
                                 </td>
                                 <td class="p-4">
                                     <?php if (!empty($item['jadwal_detail'])): ?>
-                                        <div class="flex items-start gap-2.5">
+                                        <div class="flex items-start gap-3">
                                             <?php
-                                            $has_schedule = false;
-                                            foreach ($item['jadwal_detail'] as $jd) { if (!empty($jd['date'])) { $has_schedule = true; break; } }
+                                            $icon = 'fa-calendar-check text-blue-600';
+                                            $bg_icon = 'bg-blue-50';
+                                            
+                                            if ($item['status_reproduksi'] == 'Sudah Birahi') {
+                                                $icon = 'fa-clock text-pink-600';
+                                                $bg_icon = 'bg-pink-50';
+                                            } elseif ($item['status_reproduksi'] == 'Bunting') {
+                                                $icon = 'fa-calendar-check text-green-600';
+                                                $bg_icon = 'bg-green-50';
+                                            } elseif ($item['status_reproduksi'] == 'Kosong') {
+                                                $icon = 'fa-search text-gray-400';
+                                                $bg_icon = 'bg-gray-50';
+                                            }
                                             ?>
-                                            <i class="fas <?php echo $has_schedule ? 'fa-calendar-check text-blue-600' : 'fa-search text-gray-400'; ?> text-[18px] mt-0.5 flex-shrink-0"></i>
-                                            <div class="text-sm leading-relaxed space-y-1">
+                                            <div class="w-9 h-9 rounded-xl <?php echo $bg_icon; ?> flex items-center justify-center flex-shrink-0 shadow-sm border border-current/5">
+                                                <i class="fas <?php echo $icon; ?> text-sm"></i>
+                                            </div>
+                                            <div class="text-sm space-y-1">
                                                 <?php foreach ($item['jadwal_detail'] as $jd): ?>
-                                                    <p>
-                                                        <span class="font-bold <?php echo $jd['color']; ?>"><?php echo $jd['label']; ?></span>
-                                                        <span class="text-gray-600"><?php echo $jd['date']; ?></span>
+                                                    <p class="leading-tight">
+                                                        <span class="font-bold <?php echo $jd['color']; ?> text-[13px]"><?php echo $jd['label']; ?></span>
+                                                        <span class="text-slate-600 font-medium ml-1"><?php echo $jd['date']; ?></span>
                                                     </p>
                                                 <?php endforeach; ?>
                                             </div>
@@ -211,7 +225,7 @@ foreach ($semua_sapi as $s) {
             <div class="md:hidden divide-y divide-gray-100" id="cardContainer">
                 <?php if (count($monitoring_data) > 0): ?>
                     <?php foreach ($monitoring_data as $item): ?>
-                    <?php $badge = $status_colors[$item['status_reproduksi']] ?? $status_colors['Kosong']; ?>
+                    <?php $badge = isset($status_colors[$item['status_reproduksi']]) ? $status_colors[$item['status_reproduksi']] : $status_colors['Kosong']; ?>
                     <div class="p-5 space-y-4 pemeriksaan-card">
                         <div class="flex justify-between items-start">
                             <div>
@@ -240,7 +254,7 @@ foreach ($semua_sapi as $s) {
                                         </div>
                                     <?php else: ?>
                                         <div class="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center shrink-0">
-                                            <i class="fas <?php echo ($jd['icon'] ?? 'search') === 'exclamation' ? 'fa-exclamation-triangle' : 'fa-search'; ?> text-xs"></i>
+                                            <i class="fas <?php echo (isset($jd['icon']) ? $jd['icon'] : 'search') === 'exclamation' ? 'fa-exclamation-triangle' : 'fa-search'; ?> text-xs"></i>
                                         </div>
                                     <?php endif; ?>
                                     <div>

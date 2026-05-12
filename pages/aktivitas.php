@@ -10,54 +10,18 @@ $all_activities = $sapi->getAllActivities()->fetchAll(PDO::FETCH_ASSOC);
 
 // Map activity types to styles
 $activity_config = [
-    'tambah_sapi' => [
-        'icon' => 'fas fa-plus',
-        'bg' => 'bg-blue-100',
-        'color' => 'text-blue-500',
-        'label' => 'Registrasi Sapi'
-    ],
-    'tambah_birahi' => [
-        'icon' => 'fas fa-venus-mars',
-        'bg' => 'bg-pink-100',
-        'color' => 'text-pink-500',
-        'label' => 'Birahi Tercatat'
-    ],
-    'inseminasi' => [
-        'icon' => 'fas fa-syringe',
-        'bg' => 'bg-amber-100',
-        'color' => 'text-amber-500',
-        'label' => 'Inseminasi (IB)'
-    ],
-    'pkb' => [
-        'icon' => 'fas fa-stethoscope',
-        'bg' => 'bg-purple-100',
-        'color' => 'text-purple-500',
-        'label' => 'Pemeriksaan (PKB)'
-    ],
-    'kelahiran' => [
-        'icon' => 'fas fa-baby',
-        'bg' => 'bg-emerald-100',
-        'color' => 'text-emerald-500',
-        'label' => 'Kelahiran'
-    ],
-    'batal_birahi' => [
-        'icon' => 'fas fa-undo',
-        'bg' => 'bg-red-100',
-        'color' => 'text-red-500',
-        'label' => 'Batal Birahi'
-    ],
-    'batal_ib' => [
-        'icon' => 'fas fa-times',
-        'bg' => 'bg-red-100',
-        'color' => 'text-red-500',
-        'label' => 'Batal IB'
-    ],
-    'edit_sapi' => [
-        'icon' => 'fas fa-edit',
-        'bg' => 'bg-gray-100',
-        'color' => 'text-gray-500',
-        'label' => 'Update Data'
-    ]
+    'tambah_sapi'   => ['icon' => 'fas fa-plus',        'bg' => 'bg-blue-100',    'color' => 'text-blue-600',    'label' => 'Registrasi Sapi'],
+    'edit_sapi'     => ['icon' => 'fas fa-edit',        'bg' => 'bg-slate-100',   'color' => 'text-slate-600',   'label' => 'Update Data'],
+    'hapus_sapi'    => ['icon' => 'fas fa-trash',       'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Hapus Sapi'],
+    'import_sapi'   => ['icon' => 'fas fa-file-excel',  'bg' => 'bg-green-100',   'color' => 'text-green-700',   'label' => 'Import Excel'],
+    'tambah_birahi' => ['icon' => 'fas fa-venus-mars',  'bg' => 'bg-pink-100',    'color' => 'text-pink-600',    'label' => 'Laporan Birahi'],
+    'batal_birahi'  => ['icon' => 'fas fa-undo',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal Birahi'],
+    'inseminasi'    => ['icon' => 'fas fa-syringe',     'bg' => 'bg-amber-100',   'color' => 'text-amber-600',   'label' => 'Inseminasi (IB)'],
+    'batal_ib'      => ['icon' => 'fas fa-times',       'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal IB'],
+    'pkb'           => ['icon' => 'fas fa-stethoscope', 'bg' => 'bg-purple-100',  'color' => 'text-purple-600',  'label' => 'Pemeriksaan (PKB)'],
+    'kelahiran'     => ['icon' => 'fas fa-baby',        'bg' => 'bg-emerald-100', 'color' => 'text-emerald-600', 'label' => 'Kelahiran'],
+    'batal_bunting' => ['icon' => 'fas fa-undo',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Batal Bunting'],
+    'reset_gagal'   => ['icon' => 'fas fa-sync',        'bg' => 'bg-red-100',     'color' => 'text-red-600',     'label' => 'Reset Siklus']
 ];
 
 ?>
@@ -132,12 +96,12 @@ $activity_config = [
                     </thead>
                     <tbody class="divide-y divide-gray-50" id="activityTableBody">
                         <?php foreach ($all_activities as $act): 
-                            $config = $activity_config[$act['jenis_aktivitas']] ?? [
+                            $config = isset($activity_config[$act['jenis_aktivitas']]) ? $activity_config[$act['jenis_aktivitas']] : array(
                                 'icon' => 'fas fa-info-circle',
                                 'bg' => 'bg-gray-100',
                                 'color' => 'text-gray-500',
                                 'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
-                            ];
+                            );
                         ?>
                         <tr class="hover:bg-gray-50/50 transition activity-row">
                             <td class="p-4 whitespace-nowrap">
@@ -173,12 +137,12 @@ $activity_config = [
             <!-- Mobile Card View -->
             <div class="md:hidden divide-y divide-gray-100" id="activityCardContainer">
                 <?php foreach ($all_activities as $act): 
-                    $config = $activity_config[$act['jenis_aktivitas']] ?? [
+                    $config = isset($activity_config[$act['jenis_aktivitas']]) ? $activity_config[$act['jenis_aktivitas']] : array(
                         'icon' => 'fas fa-info-circle',
                         'bg' => 'bg-gray-100',
                         'color' => 'text-gray-500',
                         'label' => str_replace('_', ' ', ucwords($act['jenis_aktivitas']))
-                    ];
+                    );
                 ?>
                 <div class="p-5 space-y-3 activity-card">
                     <div class="flex justify-between items-start">
