@@ -69,18 +69,20 @@ class Database {
         }
 
         // Layer 3: generate token baru dari service account
-        // Prioritas A: env var individual (paling reliable, tidak perlu file)
-        $envEmail      = getenv('FIREBASE_CLIENT_EMAIL');
-        $envPrivateKey = getenv('FIREBASE_PRIVATE_KEY');
+        // Prioritas A: File config PHP yang di-generate oleh entrypoint
+        $configFile = dirname(__DIR__) . '/config/firebase_env.php';
+        if (file_exists($configFile)) {
+            require_once $configFile;
+            if (defined('FB_CLIENT_EMAIL') && defined('FB_PRIVATE_KEY') && !empty(FB_CLIENT_EMAIL)) {
+                $key = [
+                    'client_email' => FB_CLIENT_EMAIL,
+                    'private_key'  => str_replace('\\n', "\n", FB_PRIVATE_KEY),
+                ];
+            }
+        }
 
-        if ($envEmail && $envPrivateKey) {
-            // Ganti literal \n dengan newline asli (Dokploy kadang kirim sebagai string)
-            $key = [
-                'client_email' => $envEmail,
-                'private_key'  => str_replace('\\n', "\n", $envPrivateKey),
-            ];
-        } else {
-            // Prioritas B: baca dari file JSON
+        // Prioritas B: baca dari file JSON sebagai fallback
+        if (!isset($key)) {
             $absolutePath = dirname(__DIR__) . '/' . $this->keyFile;
             if (!file_exists($absolutePath)) {
                 error_log('[CattlePro] Key file not found: ' . $absolutePath);
