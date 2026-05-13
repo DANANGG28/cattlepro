@@ -5,7 +5,7 @@ require_once 'controllers/Database.php';
 $db = new Database();
 
 // Test koneksi dulu dan cari ID user
-$email = 'danangeja3003@gmail.com';
+$email = 'danangaja3003@gmail.com';
 $testQuery = 'query { users(where: { email: { eq: "' . $email . '" } }) { id email } }';
 $testRes = $db->execute($testQuery);
 
