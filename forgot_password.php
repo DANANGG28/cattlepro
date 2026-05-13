@@ -8,7 +8,14 @@ require_once 'models/User.php';
 // =============================================
 define('RESEND_API_KEY', 're_iE6yKBbA_JCey9e38deUnYD2EP4hof1nt');
 define('RESEND_FROM', 'CattlePro - Reset Password <onboarding@resend.dev>'); // Ganti ke domain Anda jika sudah diverifikasi di Resend
-define('APP_URL', 'http://localhost/cattlepro');
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ? "https" : "http");
+$host = $_SERVER['HTTP_HOST'];
+$script_path = dirname($_SERVER['SCRIPT_NAME']);
+$script_path = str_replace('\\', '/', $script_path);
+if ($script_path === '/') {
+    $script_path = '';
+}
+define('APP_URL', $protocol . '://' . $host . $script_path);
 
 $database = new Database();
 $db = $database->getConnection();
