@@ -10,25 +10,23 @@ mkdir -p /var/www/html/config
 if [ -n "$FIREBASE_CREDENTIALS_B64" ]; then
     printf '%s' "$FIREBASE_CREDENTIALS_B64" | base64 -d > "$CREDENTIALS_FILE"
     echo "[CattlePro] Credentials dimuat dari FIREBASE_CREDENTIALS_B64."
-
-# ── Prioritas 2: Raw JSON ──────────────────────────────────────────────
-elif [ -n "$FIREBASE_CREDENTIALS" ]; then
-    printf '%s' "$FIREBASE_CREDENTIALS" > "$CREDENTIALS_FILE"
-    echo "[CattlePro] Credentials dimuat dari FIREBASE_CREDENTIALS."
+    
+    # Gunakan PHP untuk decode JSON dan buat config file dengan aman
+    php -r '
+        $json = json_decode(file_get_contents("'$CREDENTIALS_FILE'"), true);
+        if($json && isset($json["private_key"])){
+            $content = "<?php\n";
+            $content .= "define(\"FB_CLIENT_EMAIL\", \"" . $json["client_email"] . "\");\n";
+            // var_export handle multiline string private key dengan aman
+            $content .= "define(\"FB_PRIVATE_KEY\", " . var_export($json["private_key"], true) . ");\n";
+            $content .= "define(\"FB_PROJECT_ID\", \"" . $json["project_id"] . "\");\n";
+            file_put_contents("'$PHP_CONFIG_FILE'", $content);
+        }
+    '
 fi
 
-# ── Selalu: Tulis PHP config dari env vars individual ─────────────────
-# Ini bypass masalah Apache tidak passing env vars ke PHP
-cat > "$PHP_CONFIG_FILE" <<PHPEOF
-<?php
-// AUTO-GENERATED oleh docker-entrypoint.sh — JANGAN EDIT MANUAL
-define('FB_CLIENT_EMAIL', '${FIREBASE_CLIENT_EMAIL}');
-define('FB_PRIVATE_KEY',  '${FIREBASE_PRIVATE_KEY}');
-define('FB_PROJECT_ID',   '${FIREBASE_PROJECT_ID:-cattlepro-93c0b}');
-PHPEOF
-
 chown -R www-data:www-data /var/www/html/config
-chmod 600 "$PHP_CONFIG_FILE"
-echo "[CattlePro] PHP firebase config ditulis ke $PHP_CONFIG_FILE"
+chmod 600 "$PHP_CONFIG_FILE" || true
+echo "[CattlePro] Entrypoint selesai. Memulai Apache..."
 
 exec "$@"
