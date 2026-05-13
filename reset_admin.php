@@ -38,7 +38,15 @@ if (isset($testRes['data'])) {
     }
 } else {
     echo "❌ Firebase gagal:<br><pre>" . print_r($testRes, true) . "</pre>";
-    echo "<br>FIREBASE_CLIENT_EMAIL set: " . (getenv('FIREBASE_CLIENT_EMAIL') ? '✅' : '❌') . "<br>";
-    echo "FIREBASE_PRIVATE_KEY set: " . (getenv('FIREBASE_PRIVATE_KEY') ? '✅ (' . strlen(getenv('FIREBASE_PRIVATE_KEY')) . ' chars)' : '❌') . "<br>";
+    
+    // Debug isi file config
+    $configFile = dirname(__FILE__) . '/config/firebase_env.php';
+    echo "<h3>Debug File Config:</h3>";
+    if (file_exists($configFile)) {
+        echo "✅ File config ditemukan!<br>";
+        echo "<pre>" . htmlspecialchars(file_get_contents($configFile)) . "</pre>";
+    } else {
+        echo "❌ File config TIDAK ditemukan! Entrypoint script gagal jalan.<br>";
+    }
 }
 ?>
