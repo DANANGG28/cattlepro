@@ -18,7 +18,6 @@ php -r '
     
     $jsonString = "";
     if (!empty($b64)) {
-        // Bersihkan whitespace dan karakter aneh
         $b64 = trim($b64, " \t\n\r\0\x0B<>");
         $jsonString = base64_decode($b64);
     } elseif (!empty($raw)) {
@@ -28,22 +27,39 @@ php -r '
     $content = "<?php\n";
     if (!empty($jsonString)) {
         $json = json_decode($jsonString, true);
+        
+        $clientEmail = "";
+        $privateKey = "";
+        $projectId = "";
+
         if ($json && isset($json["private_key"])) {
-            $content .= "define(\"FB_CLIENT_EMAIL\", \"" . $json["client_email"] . "\");\n";
-            $content .= "define(\"FB_PRIVATE_KEY\", " . var_export($json["private_key"], true) . ");\n";
-            $content .= "define(\"FB_PROJECT_ID\", \"" . $json["project_id"] . "\");\n";
+            $clientEmail = $json["client_email"] ?? "";
+            $privateKey = $json["private_key"] ?? "";
+            $projectId = $json["project_id"] ?? "";
         } else {
-            $error = json_last_error_msg();
-            $snippet = substr($jsonString, 0, 500);
-            $content .= "/*\n";
-            $content .= "JSON FAILED TO DECODE OR MISSING PRIVATE_KEY\n";
-            $content .= "JSON Error: " . $error . "\n";
-            $content .= "Decoded snippet:\n" . $snippet . "\n";
-            $content .= "Decoded length: " . strlen($jsonString) . "\n";
-            $content .= "*/\n";
+            // BYPASS JSON DECODE FAILURES WITH REGEX
+            if (preg_match("/\"client_email\"\s*:\s*\"([^\"]+)\"/", $jsonString, $matches)) {
+                $clientEmail = $matches[1];
+            }
+            if (preg_match("/\"private_key\"\s*:\s*\"([^\"]+)\"/", $jsonString, $matches)) {
+                $privateKey = str_replace("\\n", "\n", $matches[1]);
+            }
+            if (preg_match("/\"project_id\"\s*:\s*\"([^\"]+)\"/", $jsonString, $matches)) {
+                $projectId = $matches[1];
+            }
+        }
+
+        if (!empty($privateKey) && !empty($clientEmail)) {
+            $content .= "define(\"FB_CLIENT_EMAIL\", \"" . $clientEmail . "\");\n";
+            $content .= "define(\"FB_PRIVATE_KEY\", " . var_export($privateKey, true) . ");\n";
+            $content .= "define(\"FB_PROJECT_ID\", \"" . $projectId . "\");\n";
+            echo "[CattlePro] Config PHP berhasil di-generate (Regex/JSON mode)!\n";
+        } else {
+            $content .= "// GAGAL MENEMUKAN KREDENSIAL VIA REGEX MAUPUN JSON\n";
+            $content .= "// Snippet: " . var_export(substr($jsonString, 0, 200), true) . "\n";
         }
     } else {
-        $content .= "/* FIREBASE CREDENTIALS KOSONG ATAU GAGAL DECODE BASE64 */\n";
+        $content .= "/* FIREBASE CREDENTIALS KOSONG */\n";
     }
     
     file_put_contents("'$PHP_CONFIG_FILE'", $content);
