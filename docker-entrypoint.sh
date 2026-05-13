@@ -34,14 +34,16 @@ php -r '
             $content .= "define(\"FB_PROJECT_ID\", \"" . $json["project_id"] . "\");\n";
         } else {
             $error = json_last_error_msg();
-            $snippet = substr($jsonString, 0, 100);
-            $content .= "// JSON FAILED TO DECODE OR MISSING PRIVATE_KEY\n";
-            $content .= "// JSON Error: " . $error . "\n";
-            $content .= "// Decoded snippet: " . var_export($snippet, true) . "\n";
-            $content .= "// Decoded length: " . strlen($jsonString) . "\n";
+            $snippet = substr($jsonString, 0, 500);
+            $content .= "/*\n";
+            $content .= "JSON FAILED TO DECODE OR MISSING PRIVATE_KEY\n";
+            $content .= "JSON Error: " . $error . "\n";
+            $content .= "Decoded snippet:\n" . $snippet . "\n";
+            $content .= "Decoded length: " . strlen($jsonString) . "\n";
+            $content .= "*/\n";
         }
     } else {
-        $content .= "// FIREBASE CREDENTIALS KOSONG ATAU GAGAL DECODE BASE64\n";
+        $content .= "/* FIREBASE CREDENTIALS KOSONG ATAU GAGAL DECODE BASE64 */\n";
     }
     
     file_put_contents("'$PHP_CONFIG_FILE'", $content);
