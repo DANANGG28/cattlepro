@@ -68,14 +68,30 @@ class Database {
             return self::$cachedToken;
         }
 
-        // Layer 3: generate token baru dari service account JSON
-        $absolutePath = dirname(__DIR__) . '/' . $this->keyFile;
-        if (!file_exists($absolutePath)) {
-            error_log('[CattlePro] Key file not found: ' . $absolutePath);
-            return null;
-        }
+        // Layer 3: generate token baru dari service account
+        // Prioritas A: env var individual (paling reliable, tidak perlu file)
+        $envEmail      = getenv('FIREBASE_CLIENT_EMAIL');
+        $envPrivateKey = getenv('FIREBASE_PRIVATE_KEY');
 
-        $key = json_decode(file_get_contents($absolutePath), true);
+        if ($envEmail && $envPrivateKey) {
+            // Ganti literal \n dengan newline asli (Dokploy kadang kirim sebagai string)
+            $key = [
+                'client_email' => $envEmail,
+                'private_key'  => str_replace('\\n', "\n", $envPrivateKey),
+            ];
+        } else {
+            // Prioritas B: baca dari file JSON
+            $absolutePath = dirname(__DIR__) . '/' . $this->keyFile;
+            if (!file_exists($absolutePath)) {
+                error_log('[CattlePro] Key file not found: ' . $absolutePath);
+                return null;
+            }
+            $key = json_decode(file_get_contents($absolutePath), true);
+            if (!$key) {
+                error_log('[CattlePro] JSON credentials corrupt! json_last_error: ' . json_last_error_msg());
+                return null;
+            }
+        }
 
         $header  = $this->base64url_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
         $payload = $this->base64url_encode(json_encode([
