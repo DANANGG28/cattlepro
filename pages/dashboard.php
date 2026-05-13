@@ -16,89 +16,16 @@ $count_bunting = 0;
 $count_kosong = 0;
 $count_gagal_hamil = 0;
 
-$notifikasi = [];
+$notifikasi = $sapi->getReproductionNotifications();
 
-// Batch fetch: ambil semua latest birahi sekaligus
-$all_latest_birahi = $sapi->getAllLatestBirahi();
-
-// Loop untuk kalkulasi stats dan generate alert notifikasi
-foreach($semua_sapi as $key => $s) {
+// Loop untuk kalkulasi stats
+foreach($semua_sapi as $s) {
     $status = isset($s['status_reproduksi']) ? $s['status_reproduksi'] : 'Kosong';
-    
-    // Default sub status date format for the table
-    $semua_sapi[$key]['last_update_text'] = '';
-    $semua_sapi[$key]['last_update_date'] = '';
-
-    if ($status == 'Kosong') {
-        $count_kosong++;
-    } elseif ($status == 'Gagal Hamil') {
-        $count_gagal_hamil++;
-    } elseif ($status == 'Sudah Birahi') {
-        $count_birahi++;
-        $latest = isset($all_latest_birahi[$s['id']]) ? $all_latest_birahi[$s['id']] : null;
-        if ($latest) {
-             $semua_sapi[$key]['last_update_text'] = 'Birahi';
-             $semua_sapi[$key]['last_update_date'] = tgl_indo($latest['tanggal_birahi']);
-             
-             $waktu_birahi = strtotime($latest['tanggal_birahi']);
-             $sisa_jam = round((($waktu_birahi + (12 * 3600)) - time()) / 3600);
-             if ($sisa_jam > 0 && $sisa_jam <= 12) {
-                  $notifikasi[] = [
-                     'icon' => 'fas fa-exclamation-circle text-orange-500',
-                     'bg' => 'bg-orange-50 border-orange-100/50',
-                     'msg' => "Segera lakukan Inseminasi Buatan! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam)."
-                 ];
-             }
-        }
-    } elseif ($status == 'Sudah IB') {
-        $count_ib++;
-        if (!empty($s['tanggal_ib'])) {
-             $semua_sapi[$key]['last_update_text'] = 'Inseminasi Buatan';
-             $semua_sapi[$key]['last_update_date'] = tgl_indo(date('Y-m-d', strtotime($s['tanggal_ib'])));
-             
-             $waktu_ib = strtotime($s['tanggal_ib']);
-             $waktu_pkb = $waktu_ib + (60 * 24 * 3600);
-             $sisa_hari_pkb = round(($waktu_pkb - time()) / (24 * 3600));
-             
-             if ($sisa_hari_pkb <= 15 && $sisa_hari_pkb > 0) {
-                 $notifikasi[] = [
-                     'icon' => 'fas fa-info-circle text-blue-500',
-                     'bg' => 'bg-blue-50/70 border-blue-100',
-                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan pada " . tgl_indo(date('Y-m-d', $waktu_pkb)) . " (H-{$sisa_hari_pkb})."
-                 ];
-             } elseif ($sisa_hari_pkb <= 0) {
-                 $notifikasi[] = [
-                     'icon' => 'fas fa-stethoscope text-blue-600',
-                     'bg' => 'bg-blue-100 border-blue-200',
-                     'msg' => "Sudah masuk jadwal PKB untuk sapi <b>{$s['kode_sapi']}</b>. Segera lakukan pemeriksaan!"
-                 ];
-             }
-        }
-    } elseif ($status == 'Bunting') {
-        $count_bunting++;
-        if (!empty($s['tanggal_ib'])) {
-             $semua_sapi[$key]['last_update_text'] = 'Pemeriksaan Kebuntingan'; 
-             $semua_sapi[$key]['last_update_date'] = tgl_indo(date('Y-m-d', strtotime($s['tanggal_ib']))); 
-             
-             $waktu_ib = strtotime($s['tanggal_ib']);
-             $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
-             $sisa_hari_hpl = round(($waktu_hpl - time()) / (24 * 3600));
-             
-              if ($sisa_hari_hpl <= 30 && $sisa_hari_hpl > 0) {
-                 $notifikasi[] = [
-                     'icon' => 'fas fa-leaf text-emerald-500',
-                     'bg' => 'bg-emerald-50/80 border-emerald-100/50',
-                     'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan " . tgl_indo(date('Y-m-d', $waktu_hpl)) . " (H-{$sisa_hari_hpl})."
-                 ];
-             } elseif ($sisa_hari_hpl <= 0) {
-                 $notifikasi[] = [
-                     'icon' => 'fas fa-baby text-emerald-700',
-                     'bg' => 'bg-emerald-100 border-emerald-200',
-                     'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati Hari Perkiraan Lahir / Sedang proses kelahiran. Segera laporkan kelahiran."
-                 ];
-             }
-        }
-    }
+    if ($status == 'Kosong') $count_kosong++;
+    elseif ($status == 'Gagal Hamil') $count_gagal_hamil++;
+    elseif ($status == 'Sudah Birahi') $count_birahi++;
+    elseif ($status == 'Sudah IB') $count_ib++;
+    elseif ($status == 'Bunting') $count_bunting++;
 }
 
 // Slice to show only a few records (e.g. 5) in the table on dashboard
@@ -149,23 +76,11 @@ $activity_config = [
 <div class="flex-1 h-screen overflow-y-auto w-full transition-all duration-300 relative flex flex-col bg-[#F0F2F5]" id="main-content">
     
     <!-- Topbar -->
-    <header class="bg-white shadow-sm border-b border-gray-200 p-4 px-6 flex justify-between items-center sticky top-0 z-10 w-full">
-        <h2 class="text-xl font-bold text-slate-800 hidden sm:block">Dashboard Overview</h2>
-        <!-- Mobile Title -->
-        <h2 class="text-lg font-bold text-slate-800 sm:hidden">Overview</h2>
-        
-        <div class="flex items-center gap-4 ml-auto">
-            <button class="relative text-gray-500 hover:text-emerald-600 transition">
-                <i class="far fa-bell text-xl"></i>
-                <?php if (count($notifikasi) > 0): ?>
-                    <span class="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[9px] text-white">
-                        <?php echo count($notifikasi); ?>
-                    </span>
-                <?php endif; ?>
-            </button>
-            <div class="h-6 w-px bg-gray-200 hidden sm:block"></div>
-            <?php include '../components/profile_dropdown.php'; ?>
-        </div>
+    <?php 
+    $page_title = 'Dashboard Overview';
+    $page_title_mobile = 'Overview';
+    include '../components/header.php'; 
+    ?>
     </header>
 
     <!-- Content Area -->
@@ -235,25 +150,6 @@ $activity_config = [
             </div>
         </div>
 
-        <!-- Instruksi & Notifikasi Reproduksi -->
-        <?php if (count($notifikasi) > 0): ?>
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="p-4 border-b border-gray-50 flex items-center gap-2">
-                <i class="fas fa-bolt text-yellow-500 text-lg"></i>
-                <h3 class="font-bold text-[15px] text-slate-800">Instruksi & Notifikasi Reproduksi</h3>
-            </div>
-            <div class="p-4 space-y-3 bg-gray-50/50">
-                <?php foreach($notifikasi as $notif): ?>
-                <div class="flex items-center gap-3 <?php echo $notif['bg']; ?> p-3.5 rounded-xl border">
-                    <div class="w-6 h-6 shrink-0 flex items-center justify-center">
-                        <i class="<?php echo $notif['icon']; ?> text-lg"></i>
-                    </div>
-                    <p class="text-[13px] sm:text-sm text-slate-700 leading-relaxed"><?php echo $notif['msg']; ?></p>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             

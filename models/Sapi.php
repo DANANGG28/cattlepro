@@ -440,5 +440,93 @@ class Sapi {
         
         return new QueryResult($results);
     }
+
+    public function getReproductionNotifications() {
+        $semua_sapi = $this->readAll()->fetchAll(PDO::FETCH_ASSOC);
+        $all_latest_birahi = $this->getAllLatestBirahi();
+        $notifikasi = [];
+
+        foreach($semua_sapi as $s) {
+            $status = isset($s['status_reproduksi']) ? $s['status_reproduksi'] : 'Kosong';
+            
+            if ($status == 'Sudah Birahi') {
+                $latest = isset($all_latest_birahi[$s['id']]) ? $all_latest_birahi[$s['id']] : null;
+                if ($latest) {
+                     $waktu_birahi = strtotime($latest['tanggal_birahi']);
+                     $sisa_jam = round((($waktu_birahi + (12 * 3600)) - time()) / 3600);
+                     if ($sisa_jam > 0 && $sisa_jam <= 12) {
+                          $notifikasi[] = [
+                             'id_sapi' => $s['id'],
+                             'kode_sapi' => $s['kode_sapi'],
+                             'type' => 'birahi',
+                             'icon' => 'fas fa-exclamation-circle text-orange-500',
+                             'bg' => 'bg-orange-50 border-orange-100/50',
+                             'msg' => "Segera lakukan Inseminasi Buatan! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam).",
+                             'created_at' => $latest['tanggal_birahi']
+                         ];
+                     }
+                }
+            } elseif ($status == 'Sudah IB') {
+                if (!empty($s['tanggal_ib'])) {
+                     $waktu_ib = strtotime($s['tanggal_ib']);
+                     $waktu_pkb = $waktu_ib + (60 * 24 * 3600);
+                     $sisa_hari_pkb = round(($waktu_pkb - time()) / (24 * 3600));
+                     
+                     if ($sisa_hari_pkb <= 15 && $sisa_hari_pkb > 0) {
+                          $notifikasi[] = [
+                             'id_sapi' => $s['id'],
+                             'kode_sapi' => $s['kode_sapi'],
+                             'type' => 'pkb_near',
+                             'icon' => 'fas fa-info-circle text-blue-500',
+                             'bg' => 'bg-blue-50/70 border-blue-100',
+                             'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan (H-{$sisa_hari_pkb}).",
+                             'created_at' => $s['tanggal_ib'],
+                             'target_date' => date('Y-m-d', $waktu_pkb)
+                         ];
+                     } elseif ($sisa_hari_pkb <= 0) {
+                          $notifikasi[] = [
+                             'id_sapi' => $s['id'],
+                             'kode_sapi' => $s['kode_sapi'],
+                             'type' => 'pkb_now',
+                             'icon' => 'fas fa-stethoscope text-blue-600',
+                             'bg' => 'bg-blue-100 border-blue-200',
+                             'msg' => "Sudah masuk jadwal PKB untuk sapi <b>{$s['kode_sapi']}</b>. Segera lakukan pemeriksaan!",
+                             'created_at' => $s['tanggal_ib']
+                         ];
+                     }
+                }
+            } elseif ($status == 'Bunting') {
+                if (!empty($s['tanggal_ib'])) {
+                     $waktu_ib = strtotime($s['tanggal_ib']);
+                     $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
+                     $sisa_hari_hpl = round(($waktu_hpl - time()) / (24 * 3600));
+                     
+                      if ($sisa_hari_hpl <= 30 && $sisa_hari_hpl > 0) {
+                          $notifikasi[] = [
+                             'id_sapi' => $s['id'],
+                             'kode_sapi' => $s['kode_sapi'],
+                             'type' => 'hpl_near',
+                             'icon' => 'fas fa-leaf text-emerald-500',
+                             'bg' => 'bg-emerald-50/80 border-emerald-100/50',
+                             'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan (H-{$sisa_hari_hpl}).",
+                             'created_at' => $s['tanggal_ib'],
+                             'target_date' => date('Y-m-d', $waktu_hpl)
+                         ];
+                     } elseif ($sisa_hari_hpl <= 0) {
+                          $notifikasi[] = [
+                             'id_sapi' => $s['id'],
+                             'kode_sapi' => $s['kode_sapi'],
+                             'type' => 'hpl_now',
+                             'icon' => 'fas fa-baby text-emerald-700',
+                             'bg' => 'bg-emerald-100 border-emerald-200',
+                             'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati Hari Perkiraan Lahir / Sedang proses kelahiran. Segera laporkan kelahiran.",
+                             'created_at' => $s['tanggal_ib']
+                         ];
+                     }
+                }
+            }
+        }
+        return $notifikasi;
+    }
 }
 ?>

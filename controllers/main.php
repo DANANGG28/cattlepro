@@ -39,8 +39,10 @@ function tgl_indo($tanggal, $with_time = false, $with_day = false) {
 
 // Get current user info for components
 $current_user = null;
+$notifikasi = [];
 if (isset($_SESSION['user_id'])) {
     $current_user = $user_model->getById($_SESSION['user_id']);
+    $notifikasi = $sapi->getReproductionNotifications();
 }
 
 // Helper function to send WhatsApp via Fonnte (dengan dukungan Schedule)

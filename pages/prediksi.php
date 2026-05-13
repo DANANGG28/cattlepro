@@ -87,13 +87,12 @@ foreach ($semua_sapi as $s) {
 
 <div class="flex-1 h-screen overflow-y-auto w-full transition-all duration-300 relative flex flex-col bg-[#F0F2F5]" id="main-content">
     
-    <header class="bg-white shadow-sm border-b border-gray-200 p-4 px-6 flex justify-between items-center sticky top-0 z-10 w-full">
-        <h2 class="text-xl font-bold text-slate-800 hidden sm:block">Monitoring Pemeriksaan & Reproduksi</h2>
-        <h2 class="text-lg font-bold text-slate-800 sm:hidden">Pemeriksaan</h2>
-        <div class="flex items-center gap-4 ml-auto">
-            <?php include '../components/profile_dropdown.php'; ?>
-        </div>
-    </header>
+    <!-- Topbar -->
+    <?php 
+    $page_title = 'Monitoring Pemeriksaan & Reproduksi';
+    $page_title_mobile = 'Pemeriksaan';
+    include '../components/header.php'; 
+    ?>
 
     <main class="p-4 sm:p-6 pb-24 md:pb-6 space-y-6 w-full">
 
