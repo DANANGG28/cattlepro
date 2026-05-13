@@ -35,15 +35,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     
     // Jika $res adalah null atau bukan array, berarti bukan JSON
     if (!is_array($res)) {
-        error_log('[CattlePro-LOGIN] Response bukan array: ' . print_r($res, true));
+        file_put_contents('php://stderr', '[CattlePro-LOGIN] Response bukan array: ' . print_r($res, true) . PHP_EOL);
         $error = "Gagal terhubung ke server. Silakan coba lagi.";
     } else {
         $user = isset($res['data']['users'][0]) ? $res['data']['users'][0] : null;
-        error_log('[CattlePro-LOGIN] Email: ' . $email . ' | User found: ' . ($user ? 'YES' : 'NO'));
+        file_put_contents('php://stderr', '[CattlePro-LOGIN] Email: ' . $email . ' | User found: ' . ($user ? 'YES' : 'NO') . PHP_EOL);
         if ($user) {
             $verify = password_verify($password, $user['password']);
-            error_log('[CattlePro-LOGIN] password_verify result: ' . ($verify ? 'TRUE' : 'FALSE'));
-            error_log('[CattlePro-LOGIN] Hash in DB (first 20): ' . substr($user['password'], 0, 20));
+            file_put_contents('php://stderr', '[CattlePro-LOGIN] password_verify: ' . ($verify ? 'TRUE' : 'FALSE') . PHP_EOL);
+            file_put_contents('php://stderr', '[CattlePro-LOGIN] Hash prefix: ' . substr($user['password'], 0, 20) . PHP_EOL);
         }
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id']   = $user['id'];
