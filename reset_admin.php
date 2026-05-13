@@ -4,37 +4,45 @@ require_once 'controllers/Database.php';
 
 $db = new Database();
 
-// Test koneksi dulu
-$testQuery = 'query { users(limit: 1) { id email } }';
+// Test koneksi dulu dan cari ID user
+$email = 'danangeja3003@gmail.com';
+$testQuery = 'query { users(where: { email: { eq: "' . $email . '" } }) { id email } }';
 $testRes = $db->execute($testQuery);
 
 echo "<h3>Test Firebase Connection:</h3>";
 if (isset($testRes['data'])) {
     echo "✅ Firebase terhubung!<br>";
-    echo "Users found: " . count($testRes['data']['users']) . "<br><br>";
+    $users = $testRes['data']['users'] ?? [];
+    echo "Users found: " . count($users) . "<br><br>";
 
-    // Reset password admin
-    $new_password = 'admin123';
-    $hash = password_hash($new_password, PASSWORD_DEFAULT);
-    $email = 'danangeja3003@gmail.com';
+    if (count($users) > 0) {
+        $userId = $users[0]['id'];
+        
+        // Reset password admin
+        $new_password = 'admin123';
+        $hash = password_hash($new_password, PASSWORD_DEFAULT);
 
-    $mutation = 'mutation {
-        user_update(
-            where: { email: { eq: "' . $email . '" } }
-            data: { password: "' . $hash . '" }
-        ) { id email }
-    }';
+        // Di Firebase Data Connect, user_update pakai id dan tidak return subfields
+        $mutation = 'mutation {
+            user_update(
+                id: "' . $userId . '"
+                data: { password: "' . $hash . '" }
+            )
+        }';
 
-    $res = $db->execute($mutation);
+        $res = $db->execute($mutation);
 
-    echo "<h3>Reset Password:</h3>";
-    if (isset($res['data'])) {
-        echo "✅ Password berhasil direset!<br>";
-        echo "Email: $email<br>";
-        echo "Password baru: <b>$new_password</b><br>";
-        echo "<br><b>Sekarang login dan hapus file ini!</b>";
+        echo "<h3>Reset Password:</h3>";
+        if (isset($res['data'])) {
+            echo "✅ Password berhasil direset!<br>";
+            echo "Email: $email<br>";
+            echo "Password baru: <b>$new_password</b><br>";
+            echo "<br><b>Sekarang login ke web dengan email dan password di atas!</b>";
+        } else {
+            echo "❌ Reset gagal:<br><pre>" . print_r($res, true) . "</pre>";
+        }
     } else {
-        echo "❌ Reset gagal:<br><pre>" . print_r($res, true) . "</pre>";
+        echo "❌ User dengan email $email tidak ditemukan di database.";
     }
 } else {
     echo "❌ Firebase gagal:<br><pre>" . print_r($testRes, true) . "</pre>";
