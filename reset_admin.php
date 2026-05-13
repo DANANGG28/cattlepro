@@ -1,7 +1,44 @@
 <?php
-// TEMP DEBUG - HAPUS SETELAH SELESAI
-$keyFile = dirname(__FILE__) . '/cattlepro-93c0b-firebase-adminsdk-fbsvc-cf6c373fee.json';
-echo "<h3>Raw file content (first 200 chars):</h3>";
-echo "<pre>" . htmlspecialchars(substr(file_get_contents($keyFile), 0, 200)) . "</pre>";
-echo "<h3>File size: " . filesize($keyFile) . " bytes</h3>";
+// TEMP RESET SCRIPT - HAPUS SETELAH SELESAI!
+require_once 'controllers/Database.php';
+
+$db = new Database();
+
+// Test koneksi dulu
+$testQuery = 'query { users(limit: 1) { id email } }';
+$testRes = $db->execute($testQuery);
+
+echo "<h3>Test Firebase Connection:</h3>";
+if (isset($testRes['data'])) {
+    echo "✅ Firebase terhubung!<br>";
+    echo "Users found: " . count($testRes['data']['users']) . "<br><br>";
+
+    // Reset password admin
+    $new_password = 'admin123';
+    $hash = password_hash($new_password, PASSWORD_DEFAULT);
+    $email = 'danangeja3003@gmail.com';
+
+    $mutation = 'mutation {
+        user_update(
+            where: { email: { eq: "' . $email . '" } }
+            data: { password: "' . $hash . '" }
+        ) { id email }
+    }';
+
+    $res = $db->execute($mutation);
+
+    echo "<h3>Reset Password:</h3>";
+    if (isset($res['data'])) {
+        echo "✅ Password berhasil direset!<br>";
+        echo "Email: $email<br>";
+        echo "Password baru: <b>$new_password</b><br>";
+        echo "<br><b>Sekarang login dan hapus file ini!</b>";
+    } else {
+        echo "❌ Reset gagal:<br><pre>" . print_r($res, true) . "</pre>";
+    }
+} else {
+    echo "❌ Firebase gagal:<br><pre>" . print_r($testRes, true) . "</pre>";
+    echo "<br>FIREBASE_CLIENT_EMAIL set: " . (getenv('FIREBASE_CLIENT_EMAIL') ? '✅' : '❌') . "<br>";
+    echo "FIREBASE_PRIVATE_KEY set: " . (getenv('FIREBASE_PRIVATE_KEY') ? '✅ (' . strlen(getenv('FIREBASE_PRIVATE_KEY')) . ' chars)' : '❌') . "<br>";
+}
 ?>
