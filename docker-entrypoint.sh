@@ -12,19 +12,17 @@ env > "$ENV_DEBUG_FILE"
 echo "B64 Length: ${#FIREBASE_CREDENTIALS_B64}" >> "$ENV_DEBUG_FILE"
 
 # ── Unified Config Generator ──────────────────────────────────────────────
-# Gunakan PHP untuk membaca env vars, membersihkan karakter aneh (< >), dan men-decode JSON
 php -r '
     $b64 = getenv("FIREBASE_CREDENTIALS_B64");
     $raw = getenv("FIREBASE_CREDENTIALS");
     
     $jsonString = "";
     if (!empty($b64)) {
-        // Bersihkan < dan > lalu decode
-        $b64 = trim($b64, "<>");
+        // Bersihkan whitespace dan karakter aneh
+        $b64 = trim($b64, " \t\n\r\0\x0B<>");
         $jsonString = base64_decode($b64);
     } elseif (!empty($raw)) {
-        // Bersihkan < dan > dari string JSON
-        $jsonString = trim($raw, "<>");
+        $jsonString = trim($raw, " \t\n\r\0\x0B<>");
     }
 
     $content = "<?php\n";
@@ -32,17 +30,18 @@ php -r '
         $json = json_decode($jsonString, true);
         if ($json && isset($json["private_key"])) {
             $content .= "define(\"FB_CLIENT_EMAIL\", \"" . $json["client_email"] . "\");\n";
-            // var_export aman untuk string multi-baris
             $content .= "define(\"FB_PRIVATE_KEY\", " . var_export($json["private_key"], true) . ");\n";
             $content .= "define(\"FB_PROJECT_ID\", \"" . $json["project_id"] . "\");\n";
-            echo "[CattlePro] Config PHP berhasil di-generate dari JSON!\n";
         } else {
+            $error = json_last_error_msg();
+            $snippet = substr($jsonString, 0, 100);
             $content .= "// JSON FAILED TO DECODE OR MISSING PRIVATE_KEY\n";
-            echo "[CattlePro] Gagal decode JSON. Error: " . json_last_error_msg() . "\n";
+            $content .= "// JSON Error: " . $error . "\n";
+            $content .= "// Decoded snippet: " . var_export($snippet, true) . "\n";
+            $content .= "// Decoded length: " . strlen($jsonString) . "\n";
         }
     } else {
-        $content .= "// FIREBASE CREDENTIALS KOSONG\n";
-        echo "[CattlePro] WARNING: FIREBASE_CREDENTIALS tidak ditemukan di env!\n";
+        $content .= "// FIREBASE CREDENTIALS KOSONG ATAU GAGAL DECODE BASE64\n";
     }
     
     file_put_contents("'$PHP_CONFIG_FILE'", $content);
