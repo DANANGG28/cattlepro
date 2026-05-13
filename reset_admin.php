@@ -46,7 +46,20 @@ if (isset($testRes['data'])) {
         echo "✅ File config ditemukan!<br>";
         echo "<pre>" . htmlspecialchars(file_get_contents($configFile)) . "</pre>";
     } else {
-        echo "❌ File config TIDAK ditemukan! Entrypoint script gagal jalan.<br>";
+        echo "❌ File config TIDAK ditemukan! Entrypoint script gagal jalan atau folder config tidak tertulis.<br>";
+    }
+
+    // Debug env variables dari Dokploy
+    $envFile = dirname(__FILE__) . '/config/env_debug.txt';
+    echo "<h3>Debug Dokploy Environment Variables:</h3>";
+    if (file_exists($envFile)) {
+        echo "✅ File env debug ditemukan!<br>";
+        $envData = file_get_contents($envFile);
+        // Hide sensitive actual base64 content if it's too long, but show if it's present
+        $envData = preg_replace('/(FIREBASE_CREDENTIALS_B64=)(.+)/', '$1[TERSEMBUNYI - PANJANG: ' . strlen('$2') . ']', $envData);
+        echo "<pre>" . htmlspecialchars($envData) . "</pre>";
+    } else {
+        echo "❌ File env_debug.txt TIDAK ditemukan!<br>";
     }
 }
 ?>
