@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     
     // Jika $res adalah null atau bukan array, berarti bukan JSON
     if (!is_array($res)) {
-        $error = "Gagal terhubung ke Firebase.<br><small>Raw Response: " . htmlspecialchars($res) . "</small>";
+        $error = "Gagal terhubung ke server. Silakan coba lagi.";
     } else {
         $user = isset($res['data']['users'][0]) ? $res['data']['users'][0] : null;
         if ($user && password_verify($password, $user['password'])) {
@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             header("Location: pages/dashboard.php");
             exit;
         } else {
-            $error = "Email atau password salah.<br><small>JSON Debug: " . json_encode($res) . "</small>";
+            $error = "Email atau password salah.";
         }
     }
 }
