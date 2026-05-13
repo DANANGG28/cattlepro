@@ -50,19 +50,22 @@ $notifikasi = $sapi->getReproductionNotifications();
 
             <div class="divide-y divide-gray-50">
                 <?php if (count($notifikasi) > 0): ?>
-                    <?php foreach ($notifikasi as $notif): ?>
+                    <?php foreach ($notifikasi as $notif): 
+                        $color = isset($notif['color']) ? $notif['color'] : 'emerald';
+                        $bg_class = "bg-{$color}-50 text-{$color}-600 border-{$color}-100";
+                    ?>
                         <div class="p-6 hover:bg-gray-50/50 transition flex flex-col sm:flex-row gap-5 items-start group">
-                            <div class="w-12 h-12 rounded-2xl <?php echo str_replace('text-', 'bg-', $notif['icon']); ?>/10 flex items-center justify-center shrink-0 shadow-sm border border-current/5 group-hover:scale-110 transition-transform">
-                                <i class="<?php echo $notif['icon']; ?> text-xl"></i>
+                            <div class="w-14 h-14 rounded-2xl <?php echo $bg_class; ?> border flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                <i class="<?php echo $notif['icon']; ?> text-2xl"></i>
                             </div>
                             <div class="flex-1">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                                    <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-md font-bold uppercase tracking-widest border border-gray-200">Sapi #<?php echo $notif['kode_sapi']; ?></span>
+                                    <span class="text-[10px] bg-<?php echo $color; ?>-100 text-<?php echo $color; ?>-700 px-2 py-1 rounded-md font-extrabold uppercase tracking-widest border border-<?php echo $color; ?>-200">Sapi #<?php echo $notif['kode_sapi']; ?></span>
                                     <span class="text-[11px] text-gray-400 font-bold flex items-center gap-1"><i class="far fa-clock"></i> Baru Saja</span>
                                 </div>
-                                <p class="text-slate-700 text-base leading-relaxed"><?php echo $notif['msg']; ?></p>
+                                <p class="text-slate-700 text-lg leading-relaxed font-semibold"><?php echo $notif['msg']; ?></p>
                                 <div class="flex items-center gap-3 mt-4">
-                                    <a href="detail_sapi.php?id=<?php echo $notif['id_sapi']; ?>" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
+                                    <a href="detail_sapi.php?id=<?php echo $notif['id_sapi']; ?>" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-[0.98]">
                                         <i class="fas fa-search"></i> Lihat Detail Sapi
                                     </a>
                                 </div>

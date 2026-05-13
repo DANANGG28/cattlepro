@@ -459,8 +459,8 @@ class Sapi {
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'birahi',
-                             'icon' => 'fas fa-exclamation-circle text-orange-500',
-                             'bg' => 'bg-orange-50 border-orange-100/50',
+                             'icon' => 'fas fa-heartbeat',
+                             'color' => 'pink',
                              'msg' => "Segera lakukan Inseminasi Buatan! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam).",
                              'created_at' => $latest['tanggal_birahi']
                          ];
@@ -477,8 +477,8 @@ class Sapi {
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'pkb_near',
-                             'icon' => 'fas fa-info-circle text-blue-500',
-                             'bg' => 'bg-blue-50/70 border-blue-100',
+                             'icon' => 'fas fa-stethoscope',
+                             'color' => 'blue',
                              'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan (H-{$sisa_hari_pkb}).",
                              'created_at' => $s['tanggal_ib'],
                              'target_date' => date('Y-m-d', $waktu_pkb)
@@ -488,8 +488,8 @@ class Sapi {
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'pkb_now',
-                             'icon' => 'fas fa-stethoscope text-blue-600',
-                             'bg' => 'bg-blue-100 border-blue-200',
+                             'icon' => 'fas fa-stethoscope',
+                             'color' => 'indigo',
                              'msg' => "Sudah masuk jadwal PKB untuk sapi <b>{$s['kode_sapi']}</b>. Segera lakukan pemeriksaan!",
                              'created_at' => $s['tanggal_ib']
                          ];
@@ -506,8 +506,8 @@ class Sapi {
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'hpl_near',
-                             'icon' => 'fas fa-leaf text-emerald-500',
-                             'bg' => 'bg-emerald-50/80 border-emerald-100/50',
+                             'icon' => 'fas fa-baby',
+                             'color' => 'emerald',
                              'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan (H-{$sisa_hari_hpl}).",
                              'created_at' => $s['tanggal_ib'],
                              'target_date' => date('Y-m-d', $waktu_hpl)
@@ -517,8 +517,8 @@ class Sapi {
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'hpl_now',
-                             'icon' => 'fas fa-baby text-emerald-700',
-                             'bg' => 'bg-emerald-100 border-emerald-200',
+                             'icon' => 'fas fa-baby',
+                             'color' => 'green',
                              'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati Hari Perkiraan Lahir / Sedang proses kelahiran. Segera laporkan kelahiran.",
                              'created_at' => $s['tanggal_ib']
                          ];

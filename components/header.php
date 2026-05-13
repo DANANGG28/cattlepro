@@ -27,21 +27,27 @@ $notifikasi_count = isset($notifikasi) ? count($notifikasi) : 0;
                     <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold uppercase tracking-wider"><?php echo $notifikasi_count; ?> Baru</span>
                 </div>
                 
-                <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
-                    <?php if ($notifikasi_count > 0): ?>
-                        <div class="divide-y divide-gray-50">
-                            <?php foreach($notifikasi as $notif): ?>
-                                <div class="p-4 hover:bg-gray-50 transition flex gap-3 items-start">
-                                    <div class="w-8 h-8 rounded-lg <?php echo str_replace('text-', 'bg-', $notif['icon']); ?>/10 flex items-center justify-center shrink-0">
-                                        <i class="<?php echo $notif['icon']; ?> text-sm"></i>
+                    <div class="max-h-[400px] overflow-y-auto custom-scrollbar">
+                        <?php if ($notifikasi_count > 0): ?>
+                            <div class="divide-y divide-gray-50">
+                                <?php foreach($notifikasi as $notif): 
+                                    $color = isset($notif['color']) ? $notif['color'] : 'emerald';
+                                    $bg_class = "bg-{$color}-50 text-{$color}-600 border-{$color}-100";
+                                ?>
+                                    <div class="p-4 hover:bg-gray-50 transition flex gap-4 items-start group">
+                                        <div class="w-10 h-10 rounded-xl <?php echo $bg_class; ?> border flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                            <i class="<?php echo $notif['icon']; ?> text-[16px]"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between mb-0.5">
+                                                <span class="text-[10px] font-extrabold uppercase tracking-widest text-<?php echo $color; ?>-600">Sapi #<?php echo $notif['kode_sapi']; ?></span>
+                                                <span class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Baru Saja</span>
+                                            </div>
+                                            <p class="text-[13px] text-slate-700 leading-relaxed font-medium"><?php echo $notif['msg']; ?></p>
+                                        </div>
                                     </div>
-                                    <div class="flex-1">
-                                        <p class="text-[13px] text-slate-700 leading-relaxed"><?php echo $notif['msg']; ?></p>
-                                        <span class="text-[10px] text-gray-400 mt-1 block uppercase font-bold tracking-tighter">Baru Saja</span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                                <?php endforeach; ?>
+                            </div>
                     <?php else: ?>
                         <div class="p-10 text-center">
                             <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
