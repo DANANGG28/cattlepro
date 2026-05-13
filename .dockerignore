@@ -38,7 +38,6 @@ node_modules/
 # Docker files sendiri (tidak perlu dicopy ke dalam image)
 Dockerfile
 .dockerignore
-docker-entrypoint.sh
 
 # OS files
 .DS_Store
