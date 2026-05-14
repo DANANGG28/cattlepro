@@ -21,58 +21,121 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 
-<!-- SweetAlert2 (Global) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+<!-- Custom Notifications (Replaces SweetAlert) -->
 <script>
 // =============================================
-// CATTLEPRO GLOBAL SWEETALERT2 CONFIG
+// CATTLEPRO GLOBAL CUSTOM UI CONFIG
 // =============================================
 const CP = {
-    // Toast notifikasi (auto dismiss) — posisi tengah
+    // Toast notifikasi (auto dismiss) — posisi atas tengah
     toast: function(type, msg, timer = 3000) {
-        const colors = { success: '#00A166', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
-        const icons  = { success: 'success', error: 'error', warning: 'warning', info: 'info' };
-        Swal.fire({
-            position: 'center',
-            icon: icons[type] || 'info',
-            title: msg,
-            showConfirmButton: false,
-            timer: timer,
-            timerProgressBar: true,
-            iconColor: colors[type] || '#00A166',
-            customClass: { popup: 'cp-dialog' },
-            didOpen: (popup) => {
-                popup.addEventListener('mouseenter', Swal.stopTimer);
-                popup.addEventListener('mouseleave', Swal.resumeTimer);
-            }
+        const colors = { 
+            success: 'text-[#00D084] bg-[#00D084]/10 border-[#00D084]/20', 
+            error: 'text-red-500 bg-red-50 border-red-200', 
+            warning: 'text-amber-500 bg-amber-50 border-amber-200', 
+            info: 'text-blue-500 bg-blue-50 border-blue-200' 
+        };
+        const icons  = { 
+            success: 'fa-check-circle', 
+            error: 'fa-times-circle', 
+            warning: 'fa-exclamation-triangle', 
+            info: 'fa-info-circle' 
+        };
+        
+        const toastId = 'toast-' + Math.random().toString(36).substr(2, 9);
+        const toastHtml = `
+            <div id="${toastId}" class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border bg-white/95 backdrop-blur-xl transform transition-all duration-300 opacity-0 -translate-y-8 pointer-events-auto min-w-[300px]">
+                <div class="flex items-center justify-center w-9 h-9 rounded-full ${colors[type].split(' ')[1]} ${colors[type].split(' ')[0]}">
+                    <i class="fas ${icons[type]} text-lg"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-[14px] font-bold text-slate-800 tracking-wide pr-4">${msg}</p>
+                </div>
+                <button onclick="document.getElementById('${toastId}').remove()" class="text-gray-400 hover:text-gray-600 transition-colors ml-2">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', toastHtml);
+        const el = document.getElementById(toastId);
+        
+        // animate in
+        requestAnimationFrame(() => {
+            el.classList.remove('opacity-0', '-translate-y-8');
         });
+
+        let removeTimeout = setTimeout(() => removeToast(), timer);
+
+        el.addEventListener('mouseenter', () => clearTimeout(removeTimeout));
+        el.addEventListener('mouseleave', () => removeTimeout = setTimeout(() => removeToast(), timer));
+
+        function removeToast() {
+            if(!el) return;
+            el.classList.add('opacity-0', '-translate-y-8');
+            setTimeout(() => el.remove(), 300);
+        }
     },
 
     // Dialog konfirmasi
     confirm: function(msg, callback, opts = {}) {
-        Swal.fire({
-            title: opts.title || 'Konfirmasi',
-            text: msg,
-            icon: opts.icon || 'warning',
-            showCancelButton: true,
-            confirmButtonText: opts.confirmText || '<i class="fas fa-check mr-1"></i> Ya, Lanjutkan',
-            cancelButtonText: '<i class="fas fa-times mr-1"></i> Batal',
-            confirmButtonColor: opts.danger ? '#ef4444' : '#00A166',
-            cancelButtonColor: '#64748b',
-            reverseButtons: true,
-            customClass: { popup: 'cp-dialog' }
-        }).then(function(result) {
-            if (result.isConfirmed) callback();
+        const confirmColor = opts.danger ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' : 'bg-[#0A3622] hover:bg-[#144834] focus:ring-[#0A3622]';
+        const iconColor = opts.danger ? 'text-red-500 bg-red-50' : 'text-[#00D084] bg-[#00D084]/10';
+        const defaultIcon = opts.danger ? 'fa-exclamation-triangle' : 'fa-question-circle';
+        
+        const modalId = 'confirm-' + Math.random().toString(36).substr(2, 9);
+        const html = `
+            <div id="${modalId}" class="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+                <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity opacity-0" id="${modalId}-backdrop"></div>
+                <div class="relative bg-white rounded-3xl shadow-2xl p-7 w-full max-w-[360px] transform scale-95 opacity-0 transition-all duration-300 border border-white/20" id="${modalId}-content">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full ${iconColor} flex items-center justify-center mb-5 ring-4 ring-white shadow-sm">
+                            <i class="fas ${opts.icon || defaultIcon} text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-slate-800 mb-2.5 font-sans">${opts.title || 'Konfirmasi'}</h3>
+                        <p class="text-[14px] text-gray-500 mb-8 leading-relaxed font-medium">${msg}</p>
+                        
+                        <div class="flex flex-col-reverse sm:flex-row gap-3 w-full">
+                            <button id="${modalId}-cancel" class="w-full sm:w-[45%] py-3 px-4 rounded-xl text-[13px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all focus:outline-none">
+                                <i class="fas fa-times mr-1"></i> Batal
+                            </button>
+                            <button id="${modalId}-confirm" class="w-full sm:w-[55%] py-3 px-4 rounded-xl text-[13px] font-bold text-white ${confirmColor} transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-lg shadow-current/20">
+                                ${opts.confirmText || '<i class="fas fa-check mr-1"></i> Ya, Lanjutkan'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', html);
+        const modal = document.getElementById(modalId);
+        const backdrop = document.getElementById(`${modalId}-backdrop`);
+        const content = document.getElementById(`${modalId}-content`);
+        
+        // animate in
+        requestAnimationFrame(() => {
+            backdrop.classList.remove('opacity-0');
+            content.classList.remove('scale-95', 'opacity-0');
         });
+
+        const close = () => {
+            backdrop.classList.add('opacity-0');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.remove(), 300);
+        };
+
+        document.getElementById(`${modalId}-cancel`).onclick = close;
+        document.getElementById(`${modalId}-confirm`).onclick = () => {
+            close();
+            callback();
+        };
     },
 
     // Konfirmasi hapus (merah)
     confirmDelete: function(msg, callback) {
         CP.confirm(msg, callback, {
             title: 'Hapus Data?',
-            icon: 'warning',
+            icon: 'fa-trash',
             confirmText: '<i class="fas fa-trash mr-1"></i> Ya, Hapus',
             danger: true
         });
@@ -143,13 +206,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-/* CattlePro SweetAlert2 Theme */
-.cp-toast { font-family: 'Plus Jakarta Sans', sans-serif !important; border-radius: 14px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important; }
-.cp-toast-title { font-size: 14px !important; font-weight: 600 !important; }
-.cp-dialog { font-family: 'Plus Jakarta Sans', sans-serif !important; border-radius: 20px !important; }
-.swal2-confirm, .swal2-cancel { border-radius: 10px !important; font-weight: 700 !important; font-size: 14px !important; padding: 10px 20px !important; }
-.swal2-title { font-size: 20px !important; font-weight: 800 !important; color: #0f172a !important; }
-.swal2-html-container { font-size: 14px !important; color: #64748b !important; }
+/* Custom Alert & Modal Styles */
+/* These are kept just in case but most styles are handled by Tailwind utility classes */
 </style>
 
 

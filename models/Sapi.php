@@ -455,13 +455,14 @@ class Sapi {
                      $waktu_birahi = strtotime($latest['tanggal_birahi']);
                      $sisa_jam = round((($waktu_birahi + (12 * 3600)) - time()) / 3600);
                      if ($sisa_jam > 0 && $sisa_jam <= 12) {
+                          $target_ib = $waktu_birahi + (12 * 3600);
                           $notifikasi[] = [
                              'id_sapi' => $s['id'],
                              'kode_sapi' => $s['kode_sapi'],
                              'type' => 'birahi',
                              'icon' => 'fas fa-heartbeat',
                              'color' => 'pink',
-                             'msg' => "Segera lakukan Inseminasi Buatan! Sapi <b>{$s['kode_sapi']}</b> sedang dalam masa birahi optimal (Sisa {$sisa_jam} Jam).",
+                             'msg' => "Lakukan Inseminasi Buatan (IB) pada sapi <b>{$s['kode_sapi']}</b> paling lambat tanggal " . date('d/m/Y', $target_ib) . " jam " . date('H:i', $target_ib) . " (Sisa {$sisa_jam} Jam).",
                              'created_at' => $latest['tanggal_birahi']
                          ];
                      }
@@ -479,7 +480,7 @@ class Sapi {
                              'type' => 'pkb_near',
                              'icon' => 'fas fa-stethoscope',
                              'color' => 'blue',
-                             'msg' => "Sapi <b>{$s['kode_sapi']}</b> mendekati jadwal Pemeriksaan Kebuntingan (H-{$sisa_hari_pkb}).",
+                             'msg' => "Lakukan Pemeriksaan Kebuntingan (PKB) pada sapi <b>{$s['kode_sapi']}</b> pada tanggal " . date('d/m/Y', $waktu_pkb) . " (Sisa {$sisa_hari_pkb} Hari).",
                              'created_at' => $s['tanggal_ib'],
                              'target_date' => date('Y-m-d', $waktu_pkb)
                          ];
@@ -490,7 +491,7 @@ class Sapi {
                              'type' => 'pkb_now',
                              'icon' => 'fas fa-stethoscope',
                              'color' => 'indigo',
-                             'msg' => "Sudah masuk jadwal PKB untuk sapi <b>{$s['kode_sapi']}</b>. Segera lakukan pemeriksaan!",
+                             'msg' => "Lakukan Pemeriksaan Kebuntingan (PKB) pada sapi <b>{$s['kode_sapi']}</b> SEGERA! (Melewati jadwal tanggal " . date('d/m/Y', $waktu_pkb) . ")",
                              'created_at' => $s['tanggal_ib']
                          ];
                      }
@@ -508,7 +509,7 @@ class Sapi {
                              'type' => 'hpl_near',
                              'icon' => 'fas fa-baby',
                              'color' => 'emerald',
-                             'msg' => "Persiapan kelahiran! Sapi <b>{$s['kode_sapi']}</b> diestimasi melahirkan (H-{$sisa_hari_hpl}).",
+                             'msg' => "Lakukan persiapan kelahiran sapi <b>{$s['kode_sapi']}</b> pada tanggal " . date('d/m/Y', $waktu_hpl) . " (Sisa {$sisa_hari_hpl} Hari).",
                              'created_at' => $s['tanggal_ib'],
                              'target_date' => date('Y-m-d', $waktu_hpl)
                          ];
@@ -519,7 +520,7 @@ class Sapi {
                              'type' => 'hpl_now',
                              'icon' => 'fas fa-baby',
                              'color' => 'green',
-                             'msg' => "Sapi <b>{$s['kode_sapi']}</b> telah melewati Hari Perkiraan Lahir / Sedang proses kelahiran. Segera laporkan kelahiran.",
+                             'msg' => "Lakukan penanganan kelahiran sapi <b>{$s['kode_sapi']}</b> SEGERA! (Melewati HPL tanggal " . date('d/m/Y', $waktu_hpl) . ")",
                              'created_at' => $s['tanggal_ib']
                          ];
                      }

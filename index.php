@@ -15,6 +15,53 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Handle Google SSO Login
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['google_token'])) {
+    $token = $_POST['google_token'];
+    
+    // Verifikasi Token ke Server Google
+    $url = "https://oauth2.googleapis.com/tokeninfo?id_token=" . $token;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    $payload = json_decode($response, true);
+    
+    if (isset($payload['email'])) {
+        $email = $payload['email'];
+        
+        // Cari email Google ini di database (GraphQL)
+        $query = 'query GetUser {
+            users(where: { email: { eq: "' . $email . '" } }) {
+                id
+                nama
+                email
+                role
+            }
+        }';
+        
+        $res = $db->execute($query);
+        $user = isset($res['data']['users'][0]) ? $res['data']['users'][0] : null;
+        
+        if ($user) {
+            // Email terdaftar, berikan sesi login
+            $_SESSION['user_id']   = $user['id'];
+            $_SESSION['user_nama'] = $user['nama'];
+            $_SESSION['user_role'] = $user['role'];
+            header("Location: pages/dashboard.php");
+            exit;
+        } else {
+            // Email tidak terdaftar di database kita
+            $error = "Akses Ditolak: Akun Google <b>{$email}</b> tidak terdaftar di sistem CattlePro.";
+        }
+    } else {
+        $error = "Sistem gagal memverifikasi login Google Anda. Coba lagi.";
+    }
+}
+
 // Handle Login
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
     $email = trim($_POST['email']);
@@ -122,9 +169,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             <p class="text-[#64748B] mb-10 text-[15px]">Silakan masuk ke akun admin peternakan Anda.</p>
 
             <?php if($error): ?>
-                <div class="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm mb-6 flex items-center gap-2 border border-red-100">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                    <?php echo $error; ?>
+                <div class="bg-red-50 text-red-600 px-4 py-3.5 rounded-xl text-[14px] mb-6 flex items-start gap-3 border border-red-100 shadow-sm">
+                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <div class="flex-1 leading-relaxed">
+                        <?php echo $error; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -169,6 +218,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
                 <button type="submit" name="login" class="w-full bg-[#00A166] text-white font-bold py-[15px] rounded-[16px] hover:bg-[#008A56] active:scale-[0.98] transition-all shadow-lg shadow-[#00A166]/25 mt-4 text-[15px]">
                     Masuk Sekarang
                 </button>
+
+                <div class="flex items-center my-6 opacity-70">
+                    <div class="flex-grow border-t border-[#CBD5E1]"></div>
+                    <span class="flex-shrink-0 mx-4 text-[#64748B] text-[12px] font-bold uppercase tracking-wider">ATAU MASUK DENGAN</span>
+                    <div class="flex-grow border-t border-[#CBD5E1]"></div>
+                </div>
+
+                <!-- Google SSO Button Container -->
+                <div class="flex justify-center w-full">
+                    <div id="g_id_onload"
+                         data-client_id="1075410517316-9uusfcsj0g0eh5f8epbuhg19te0cf512.apps.googleusercontent.com"
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-callback="handleGoogleLogin"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="pill"
+                         data-theme="outline"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="center"
+                         data-width="400">
+                    </div>
+                </div>
             </form>
 
             <p class="text-center text-[14px] text-[#64748B] mt-10 font-medium">
@@ -183,6 +258,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
         </button>
     </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Hidden form for Google Login Submission -->
+<form id="google-login-form" method="POST" style="display: none;">
+    <input type="hidden" name="google_token" id="google_token">
+</form>
+
 <script>
 function togglePassword() {
     const passwordInput = document.getElementById('password');
@@ -194,6 +276,16 @@ function togglePassword() {
     } else {
         passwordInput.type = 'password';
         eyeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />';
+    }
+}
+
+// Callback Function dipanggil Google setelah user memilih akun
+function handleGoogleLogin(response) {
+    if (response.credential) {
+        // Masukkan token dari Google ke input hidden
+        document.getElementById('google_token').value = response.credential;
+        // Submit form otomatis
+        document.getElementById('google-login-form').submit();
     }
 }
 </script>
