@@ -109,7 +109,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - CattlePro Management System</title>
+    <title>Login - CattlePro</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 512'><path fill='%2300D084' d='M109.9 80.2L91.8 11.2C88.6 .9 77.9-3.7 67.9 1.4L44.4 13.5C28.2 21.8 18.2 38.6 18.2 56.8c0 14.6 7.4 28.2 19.5 36.1l32.1 21.1c-16.7 30.6-25.1 65-25.1 99.8l0 10.4c0 38 12.6 74.9 36 104.3l-1.3 5C74.6 350.3 64 369.3 64 389.9l0 69.1c0 15 9.1 28.3 23.1 33.9l32 12.8c12 4.8 25.7 1.2 33.9-8.8l21.2-25.8c29.1 23.3 65.2 36.6 102.6 37.1l.6 0c37.5-.5 73.5-13.8 102.6-37.1l21.2 25.8c8.2 10 21.9 13.6 33.9 8.8l32-12.8c14-5.6 23.1-18.9 23.1-33.9l0-69.1c0-20.6-10.6-39.6-28.1-48.9l-19.1-10.1c11.6-21.7 17.6-45.9 17.6-70.6l0-10.4c0-34.8-8.4-69.2-25.1-99.8l32.1-21.1c12.1-7.9 19.5-21.5 19.5-36.1c0-18.2-10-35-26.2-43.3l-23.5-12.1c-10-5.1-20.7-.5-23.9 9.8l-18.1 69C314.9 66 288.3 45.5 258.9 29.9l0-19.2c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 6.6c-28.5 7.6-54.3 22-75.1 41.9zM224 224a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z'/></svg>">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -128,10 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
             <!-- Logo -->
             <div class="flex items-center gap-3.5 mb-12">
                 <div class="bg-white shadow-xl shadow-black/10 w-[54px] h-[54px] rounded-[16px] flex items-center justify-center">
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" class="text-[#093320]" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12.5 4c-3.5 0-6.5 3-6.5 6.5s3 6.5 6.5 6.5 6.5-6.5 2-9-2-4-5.5-4z"/>
-                      <circle cx="10" cy="13" r="1.5" fill="currentColor"/>
-                    </svg>
+                    <i class="fas fa-cow text-[#093320] text-3xl"></i>
                 </div>
                 <span class="text-white text-[28px] font-extrabold tracking-tight">CattlePro</span>
             </div>
@@ -252,10 +253,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
 
         </div>
         
-        <!-- Help Float Button -->
-        <button class="fixed lg:absolute bottom-6 right-6 w-10 h-10 bg-[#1E293B] text-white flex rounded-full items-center justify-center hover:bg-black transition-colors shadow-lg z-50">
-            <span class="font-bold text-[15px] pb-[1px]">?</span>
-        </button>
     </div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>

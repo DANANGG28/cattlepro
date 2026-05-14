@@ -32,11 +32,11 @@ class Database {
     private $keyFile   = 'cattlepro-93c0b-firebase-adminsdk-fbsvc-cf6c373fee.json';
 
     // -------------------------------------------------------
-    // Token cache — shared across all Database instances
-    // dalam satu PHP process lifecycle
+    // Token cache & Connection Pool
     // -------------------------------------------------------
     private static $cachedToken    = null;
     private static $tokenExpiresAt = 0;
+    private static $chPool         = null;
 
     private function base64url_encode($data) {
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
@@ -160,11 +160,31 @@ class Database {
         $token = $this->getAccessToken();
         if (!$token) return ['errors' => [['message' => 'Auth Error: token null']]];
 
+        // Cek apakah ini Query (Read-Only) untuk di-cache selama 2 detik (Micro-caching / Debounce)
+        $isQuery = (stripos(trim($query), 'query') === 0);
+        $cacheFile = '';
+        if ($isQuery) {
+            $cacheKey = md5($query . json_encode($variables));
+            $cacheDir = sys_get_temp_dir() . '/cattlepro_cache';
+            if (!is_dir($cacheDir)) @mkdir($cacheDir, 0777, true);
+            $cacheFile = $cacheDir . '/' . $cacheKey . '.json';
+            
+            // Jika ada cache dan umurnya di bawah 2 detik, pakai cache (Sangat cepat!)
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 2) {
+                return json_decode(file_get_contents($cacheFile), true);
+            }
+        }
+
         $endpoint = "https://firebasedataconnect.googleapis.com/v1beta/projects/{$this->projectId}/locations/{$this->location}/services/{$this->service}:executeGraphql";
         $payload  = json_encode(['query' => $query, 'variables' => (object)$variables]);
 
-        $ch = curl_init($endpoint);
-        curl_setopt_array($ch, [
+        // Gunakan Connection Pooling (Hanya buka 1 koneksi untuk banyak query di 1 halaman)
+        if (self::$chPool === null) {
+            self::$chPool = curl_init();
+        }
+
+        curl_setopt_array(self::$chPool, [
+            CURLOPT_URL            => $endpoint,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $payload,
@@ -179,19 +199,25 @@ class Database {
             CURLOPT_TIMEOUT        => 15,  // max 15 detik total request
             CURLOPT_ENCODING       => 'gzip, deflate',
             CURLOPT_TCP_KEEPALIVE  => 1,
+            CURLOPT_TCP_KEEPIDLE   => 120,
+            CURLOPT_TCP_KEEPINTVL  => 60,
         ]);
 
-        $response = curl_exec($ch);
+        $response = curl_exec(self::$chPool);
 
-        if (curl_errno($ch)) {
-            error_log('[CattlePro] cURL Error (' . curl_errno($ch) . '): ' . curl_error($ch));
+        if (curl_errno(self::$chPool)) {
+            error_log('[CattlePro] cURL Error (' . curl_errno(self::$chPool) . '): ' . curl_error(self::$chPool));
         }
-        curl_close($ch);
+        // JANGAN curl_close(self::$chPool) agar koneksi tetap hidup untuk query berikutnya!
 
         $res = json_decode($response, true);
         if (isset($res['errors'])) {
             error_log('[CattlePro] GraphQL Error: ' . json_encode($res['errors']));
+        } else if ($isQuery && $response) {
+            // Simpan hasil sukses ke micro-cache
+            @file_put_contents($cacheFile, $response);
         }
+        
         return $res;
     }
 
