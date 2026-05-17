@@ -1,6 +1,18 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display to user
+ini_set('log_errors', 1);
+
 require_once '../controllers/main.php';
-require_once '../controllers/ExcelReader.php';
+
+// Try to load ExcelReader with error handling
+try {
+    require_once '../controllers/ExcelReader.php';
+} catch (Throwable $e) {
+    error_log("Failed to load ExcelReader: " . $e->getMessage());
+    die("System error. Please contact administrator. (Code: ER1)");
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
