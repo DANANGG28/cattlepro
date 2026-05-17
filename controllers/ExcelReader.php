@@ -9,7 +9,7 @@ class ExcelReader {
     private $file_extension;
     private $data = [];
     
-    const ALLOWED_EXTENSIONS = ['csv', 'xlsx'];
+    const ALLOWED_EXTENSIONS = ['csv', 'xlsx', 'xls'];
     const MAX_FILE_SIZE = 5242880; // 5MB in bytes
     
     public function __construct($file_path) {
@@ -31,7 +31,7 @@ class ExcelReader {
         
         // Check file extension
         if (!in_array($this->file_extension, self::ALLOWED_EXTENSIONS)) {
-            $errors[] = 'Format file tidak didukung. Gunakan CSV atau XLSX.';
+            $errors[] = 'Format file tidak didukung. Gunakan CSV, XLSX, atau XLS.';
         }
         
         // Check file size
@@ -117,10 +117,22 @@ class ExcelReader {
     }
     
     /**
-     * Read Excel file (XLSX/XLS) using SimpleXLSX library
+     * Read Excel file (XLSX/XLS) using PhpSpreadsheet or SimpleXLSX
      */
     private function readExcel() {
-        // Check if SimpleXLSX library exists
+        // Try PhpSpreadsheet first (supports both XLSX and XLS)
+        if (class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($this->file_path);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $data = $worksheet->toArray();
+                return $data;
+            } catch (Exception $e) {
+                throw new Exception('Gagal membaca file Excel: ' . $e->getMessage());
+            }
+        }
+        
+        // Fallback to SimpleXLSX for XLSX only
         $simple_xlsx_path = __DIR__ . '/SimpleXLSX.php';
         
         if (file_exists($simple_xlsx_path)) {
@@ -140,8 +152,8 @@ class ExcelReader {
             return $this->readXLSXManual();
         }
         
-        // For XLS, suggest converting to XLSX or CSV
-        throw new Exception('File XLS tidak didukung secara langsung. Silakan convert ke XLSX atau CSV terlebih dahulu.');
+        // For XLS without PhpSpreadsheet
+        throw new Exception('File XLS membutuhkan library tambahan. Silakan convert ke XLSX atau CSV, atau hubungi administrator untuk install PhpSpreadsheet.');
     }
     
     /**

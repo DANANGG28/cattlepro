@@ -2,12 +2,13 @@
 
 ## Format File yang Didukung
 
-CattlePro sekarang mendukung **2 format file** untuk import data sapi:
+CattlePro sekarang mendukung **3 format file** untuk import data sapi:
 
 - ✅ **CSV** (.csv)
 - ✅ **Excel 2007+** (.xlsx)
+- ✅ **Excel 97-2003** (.xls)
 
-> ⚠️ **Catatan:** Format Excel 97-2003 (.xls) tidak didukung. Silakan save as ke format XLSX atau CSV terlebih dahulu.
+> 💡 **Powered by PhpSpreadsheet** - Library modern untuk membaca berbagai format Excel.
 
 ## Validasi File
 
@@ -60,7 +61,7 @@ CattlePro sekarang mendukung **2 format file** untuk import data sapi:
 ### 3. Simpan File
 - **Untuk CSV**: File → Save As → pilih "CSV (Comma delimited)"
 - **Untuk XLSX**: Simpan langsung (default Excel format)
-- **Untuk XLS**: File → Save As → pilih "Excel Workbook (.xlsx)" atau "CSV"
+- **Untuk XLS**: Simpan langsung atau File → Save As → pilih "Excel 97-2003 Workbook"
 
 ### 4. Upload File
 - Klik area upload atau drag & drop file
