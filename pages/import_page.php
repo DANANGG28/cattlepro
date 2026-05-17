@@ -19,9 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
     error_log("Import attempt - File: $file_name, Extension: $file_ext, Size: " . filesize($file));
     
     // Validasi format file
-    $allowed_extensions = ['csv', 'xlsx'];
+    $allowed_extensions = ['csv'];
     if (!in_array($file_ext, $allowed_extensions)) {
-        $error = 'Format file tidak valid! Hanya mendukung CSV dan XLSX.';
+        $error = 'Format file tidak valid! Hanya mendukung CSV.';
         error_log("Import failed - Invalid extension: $file_ext");
     } else {
         try {
@@ -241,7 +241,7 @@ if (false) {
                         </li>
                         <li class="flex gap-2">
                             <span class="w-5 h-5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 font-bold">4</span>
-                            <span>Simpan file dan upload langsung. Mendukung format <span class="font-bold">CSV atau XLSX</span>.</span>
+                            <span>Di Excel, klik <span class="font-bold">File → Save As → pilih format CSV</span>, lalu upload file tersebut di sini.</span>
                         </li>
                     </ul>
 
@@ -267,15 +267,15 @@ if (false) {
                         <i class="fas fa-file-excel text-blue-500 text-3xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-slate-800 mb-2">Upload File Data Sapi</h3>
-                    <p class="text-sm text-gray-400 mb-8 max-w-sm">Upload file yang sudah diisi data sapi sesuai template. Mendukung format <strong class="text-gray-500">CSV dan XLSX</strong>.</p>
+                    <p class="text-sm text-gray-400 mb-8 max-w-sm">Upload file CSV yang sudah diisi data sapi sesuai template. Pastikan file disimpan sebagai <strong class="text-gray-500">.csv</strong> dari Excel.</p>
                     
                     <form action="" method="POST" enctype="multipart/form-data" class="w-full max-w-md space-y-6" id="uploadForm">
                         <div class="relative group">
-                            <input type="file" name="file_import" id="file_import" accept=".csv,.xlsx" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            <input type="file" name="file_import" id="file_import" accept=".csv" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                             <div id="drop-zone" class="border-2 border-dashed border-gray-200 group-hover:border-blue-400 rounded-2xl p-10 transition-all bg-gray-50 group-hover:bg-blue-50/30 flex flex-col items-center">
                                 <i class="fas fa-cloud-upload-alt text-gray-300 group-hover:text-blue-400 text-4xl mb-4" id="upload-icon"></i>
                                 <p class="text-sm font-bold text-gray-500 group-hover:text-blue-600" id="file-name">Klik untuk pilih file</p>
-                                <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">Format: CSV, XLSX</p>
+                                <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">Format: CSV</p>
                             </div>
                         </div>
                         
@@ -293,7 +293,7 @@ if (false) {
 
 <script>
 // Validasi file extension
-const allowedExtensions = ['csv', 'xlsx'];
+const allowedExtensions = ['csv'];
 const maxFileSize = 5 * 1024 * 1024; // 5MB
 
 document.getElementById('file_import').onchange = function() {
@@ -383,7 +383,7 @@ document.getElementById('uploadForm').onsubmit = function(e) {
     
     if (!allowedExtensions.includes(fileExtension)) {
         e.preventDefault();
-        alert('Format file tidak didukung! Hanya mendukung CSV dan XLSX.');
+        alert('Format file tidak didukung! Hanya mendukung CSV.');
         return false;
     }
     

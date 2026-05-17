@@ -9,7 +9,7 @@ class ExcelReader {
     private $file_extension;
     private $data = [];
     
-    const ALLOWED_EXTENSIONS = ['csv', 'xlsx'];
+    const ALLOWED_EXTENSIONS = ['csv'];
     const MAX_FILE_SIZE = 5242880; // 5MB in bytes
     
     public function __construct($file_path, $original_filename = null) {
@@ -40,7 +40,7 @@ class ExcelReader {
         
         // Check file extension
         if (!in_array($this->file_extension, self::ALLOWED_EXTENSIONS)) {
-            $errors[] = 'Format file tidak didukung. Hanya mendukung CSV dan XLSX.';
+            $errors[] = 'Format file tidak didukung. Hanya mendukung CSV.';
         }
         
         // Check file size
