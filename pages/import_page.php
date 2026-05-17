@@ -93,6 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
             }
         } catch (Exception $e) {
             $error = 'Gagal memproses file: ' . $e->getMessage();
+            // Log error untuk debugging
+            error_log("Import Error: " . $e->getMessage() . " | File: " . $file_name . " | Trace: " . $e->getTraceAsString());
         }
     }
 }

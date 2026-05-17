@@ -120,6 +120,12 @@ class ExcelReader {
      * Read Excel file (XLSX/XLS) using PhpSpreadsheet or SimpleXLSX
      */
     private function readExcel() {
+        // Load Composer autoload if not loaded yet
+        $autoload_path = __DIR__ . '/../vendor/autoload.php';
+        if (file_exists($autoload_path)) {
+            require_once $autoload_path;
+        }
+        
         // Try PhpSpreadsheet first (supports both XLSX and XLS)
         if (class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
             try {
@@ -127,8 +133,14 @@ class ExcelReader {
                 $worksheet = $spreadsheet->getActiveSheet();
                 $data = $worksheet->toArray();
                 return $data;
-            } catch (Exception $e) {
-                throw new Exception('Gagal membaca file Excel: ' . $e->getMessage());
+            } catch (\Exception $e) {
+                // If PhpSpreadsheet fails, try fallback methods
+                error_log("PhpSpreadsheet error: " . $e->getMessage());
+                
+                // For XLS, no fallback available
+                if ($this->file_extension === 'xls') {
+                    throw new Exception('Gagal membaca file XLS: ' . $e->getMessage());
+                }
             }
         }
         
@@ -153,7 +165,7 @@ class ExcelReader {
         }
         
         // For XLS without PhpSpreadsheet
-        throw new Exception('File XLS membutuhkan library tambahan. Silakan convert ke XLSX atau CSV, atau hubungi administrator untuk install PhpSpreadsheet.');
+        throw new Exception('File XLS membutuhkan library PhpSpreadsheet. Silakan convert ke XLSX atau CSV terlebih dahulu.');
     }
     
     /**
