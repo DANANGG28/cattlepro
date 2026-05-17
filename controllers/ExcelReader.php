@@ -9,7 +9,7 @@ class ExcelReader {
     private $file_extension;
     private $data = [];
     
-    const ALLOWED_EXTENSIONS = ['csv', 'xlsx', 'xls'];
+    const ALLOWED_EXTENSIONS = ['csv', 'xlsx'];
     const MAX_FILE_SIZE = 5242880; // 5MB in bytes
     
     public function __construct($file_path) {
@@ -31,7 +31,7 @@ class ExcelReader {
         
         // Check file extension
         if (!in_array($this->file_extension, self::ALLOWED_EXTENSIONS)) {
-            $errors[] = 'Format file tidak didukung. Gunakan CSV, XLSX, atau XLS.';
+            $errors[] = 'Format file tidak didukung. Hanya mendukung CSV dan XLSX.';
         }
         
         // Check file size
@@ -117,55 +117,29 @@ class ExcelReader {
     }
     
     /**
-     * Read Excel file (XLSX/XLS) using PhpSpreadsheet or SimpleXLSX
+     * Read Excel file (XLSX only) using SimpleXLSX
      */
     private function readExcel() {
-        // Load Composer autoload if not loaded yet
-        $autoload_path = __DIR__ . '/../vendor/autoload.php';
-        if (file_exists($autoload_path)) {
-            require_once $autoload_path;
+        // Only support XLSX
+        if ($this->file_extension !== 'xlsx') {
+            throw new Exception('Hanya format XLSX yang didukung untuk file Excel. Silakan convert XLS ke XLSX terlebih dahulu.');
         }
         
-        // Try PhpSpreadsheet first (supports both XLSX and XLS)
-        if (class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
-            try {
-                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($this->file_path);
-                $worksheet = $spreadsheet->getActiveSheet();
-                $data = $worksheet->toArray();
-                return $data;
-            } catch (\Exception $e) {
-                // If PhpSpreadsheet fails, try fallback methods
-                error_log("PhpSpreadsheet error: " . $e->getMessage());
-                
-                // For XLS, no fallback available
-                if ($this->file_extension === 'xls') {
-                    throw new Exception('Gagal membaca file XLS: ' . $e->getMessage());
-                }
-            }
-        }
-        
-        // Fallback to SimpleXLSX for XLSX only
+        // Use SimpleXLSX (no external dependencies needed)
         $simple_xlsx_path = __DIR__ . '/SimpleXLSX.php';
         
         if (file_exists($simple_xlsx_path)) {
             require_once $simple_xlsx_path;
             
-            if ($this->file_extension === 'xlsx') {
-                if ($xlsx = SimpleXLSX::parse($this->file_path)) {
-                    return $xlsx->rows();
-                } else {
-                    throw new Exception('Gagal membaca file XLSX: ' . SimpleXLSX::parseError());
-                }
+            if ($xlsx = SimpleXLSX::parse($this->file_path)) {
+                return $xlsx->rows();
+            } else {
+                throw new Exception('Gagal membaca file XLSX: ' . SimpleXLSX::parseError());
             }
         }
         
-        // Fallback: Try to read as XML for XLSX
-        if ($this->file_extension === 'xlsx') {
-            return $this->readXLSXManual();
-        }
-        
-        // For XLS without PhpSpreadsheet
-        throw new Exception('File XLS membutuhkan library PhpSpreadsheet. Silakan convert ke XLSX atau CSV terlebih dahulu.');
+        // Fallback: Try manual XML parsing
+        return $this->readXLSXManual();
     }
     
     /**
