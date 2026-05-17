@@ -2,11 +2,6 @@
 require_once '../controllers/main.php';
 require_once '../controllers/ExcelReader.php';
 
-// Load Composer autoload untuk PhpSpreadsheet
-if (file_exists('../vendor/autoload.php')) {
-    require_once '../vendor/autoload.php';
-}
-
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit;
