@@ -20,14 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file_import'])) {
     $file_name = $_FILES['file_import']['name'];
     $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
     
+    // Debug logging
+    error_log("Import attempt - File: $file_name, Extension: $file_ext, Size: " . filesize($file));
+    
     // Validasi format file
     $allowed_extensions = ['csv', 'xlsx'];
     if (!in_array($file_ext, $allowed_extensions)) {
         $error = 'Format file tidak valid! Hanya mendukung CSV dan XLSX.';
+        error_log("Import failed - Invalid extension: $file_ext");
     } else {
         try {
             // Gunakan ExcelReader untuk membaca file
-            $reader = new ExcelReader($file);
+            $reader = new ExcelReader($file, $file_name);
             $data_array = $reader->read();
             
             if (empty($data_array)) {

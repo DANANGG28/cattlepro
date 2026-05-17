@@ -12,9 +12,18 @@ class ExcelReader {
     const ALLOWED_EXTENSIONS = ['csv', 'xlsx'];
     const MAX_FILE_SIZE = 5242880; // 5MB in bytes
     
-    public function __construct($file_path) {
+    public function __construct($file_path, $original_filename = null) {
         $this->file_path = $file_path;
-        $this->file_extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+        
+        // If original filename provided, use it for extension detection
+        if ($original_filename) {
+            $this->file_extension = strtolower(pathinfo($original_filename, PATHINFO_EXTENSION));
+        } else {
+            $this->file_extension = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
+        }
+        
+        // Debug log
+        error_log("ExcelReader - File: $file_path, Original: $original_filename, Extension: {$this->file_extension}");
     }
     
     /**
