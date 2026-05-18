@@ -88,8 +88,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $tgl_ib = str_replace('T', ' ', trim($_POST['tanggal_ib']));
         if (strlen($tgl_ib) == 16) $tgl_ib .= ':00';
         $tgl_ib_iso = date('c', strtotime($tgl_ib));
-        $sapi->setTanggalIB($id_sapi, $tgl_ib_iso);
-        $sapi->updateStatusReproduksi($id_sapi, 'Sudah IB');
+        // setTanggalIB already updates status to "Sudah IB", no need to call updateStatusReproduksi
+        $sapi->setTanggalIB($id_sapi, $tgl_ib_iso, 'Sudah IB');
         $sapi->logActivity($_SESSION['user_id'], 'inseminasi', "Melakukan IB pada sapi: {$data_sapi['kode_sapi']}");
         
         // ---- Trigger WA & Tele: Inseminasi ----
@@ -135,7 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $flash_msg = "Selamat! Sapi dinyatakan Bunting.";
             
             // Jadwal HPL (283 hari dari IB)
-            $waktu_ib = strtotime(isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '');
+            $waktu_ib = strtotime(isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '');
             $waktu_hpl = tgl_indo(date('Y-m-d', $waktu_ib + (283 * 24 * 3600)));
 
             $pesan = "🎉 *Sapi Positif Bunting!*\n";
@@ -393,7 +393,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                 </div>
             <?php elseif ($status == 'Sudah IB'): ?>
                 <?php
-                $waktu_ib = strtotime(isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '');
+                $waktu_ib = strtotime(isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '');
                 $waktu_pantau = $waktu_ib + (21 * 24 * 3600);
                 $waktu_pkb = $waktu_ib + (60 * 24 * 3600);
                 ?>
@@ -414,7 +414,7 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                 </div>
             <?php elseif ($status == 'Bunting'): ?>
                 <?php
-                $tgl_ib_raw = isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '';
+                $tgl_ib_raw = isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '';
                 $waktu_ib = strtotime($tgl_ib_raw);
                 if ($waktu_ib > 0):
                     $waktu_hpl = $waktu_ib + (283 * 24 * 3600);
