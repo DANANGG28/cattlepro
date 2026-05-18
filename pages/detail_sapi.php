@@ -135,7 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $flash_msg = "Selamat! Sapi dinyatakan Bunting.";
             
             // Jadwal HPL (283 hari dari IB)
-            $waktu_ib = strtotime(isset($data_sapi['tanggal_ib']) ? $data_sapi['tanggal_ib'] : '');
+            $waktu_ib = strtotime(isset($data_sapi['tanggalIb']) ? $data_sapi['tanggalIb'] : '');
             $waktu_hpl = tgl_indo(date('Y-m-d', $waktu_ib + (283 * 24 * 3600)));
 
             $pesan = "🎉 *Sapi Positif Bunting!*\n";
@@ -423,19 +423,22 @@ $riwayat_aktivitas = $sapi->getHistoryBySapi($id_sapi);
                     <div class="flex items-start gap-3">
                         <i class="fas fa-info-circle mt-0.5 text-lg text-green-500"></i>
                         <div class="text-sm">
-                            <p class="font-bold text-green-700 mb-1">Hari Perkiraan Lahir:</p>
-                            <p class="text-gray-700"><?php echo tgl_indo(date('Y-m-d', $waktu_hpl)); ?></p>
-                            <p class="text-xs text-green-400 mt-1">(283 hari sejak Inseminasi Buatan: <?php echo tgl_indo(date('Y-m-d', $waktu_ib)); ?>)</p>
+                            <p class="font-bold text-green-700 mb-1">Hari Perkiraan Lahir (HPL):</p>
+                            <p class="text-gray-700 text-lg font-bold"><?php echo tgl_indo(date('Y-m-d', $waktu_hpl)); ?></p>
+                            <p class="text-xs text-gray-500 mt-1">283 hari sejak IB: <?php echo tgl_indo(date('Y-m-d', $waktu_ib)); ?></p>
                         </div>
                     </div>
                 </div>
                 <?php else: ?>
-                <div class="p-4 rounded-xl mb-6 bg-yellow-50 border border-yellow-100 shadow-sm">
+                <div class="p-4 rounded-xl mb-6 bg-blue-50 border border-blue-200 shadow-sm">
                     <div class="flex items-start gap-3">
-                        <i class="fas fa-exclamation-triangle mt-0.5 text-lg text-yellow-600"></i>
+                        <i class="fas fa-info-circle mt-0.5 text-lg text-blue-500"></i>
                         <div class="text-sm">
-                            <p class="font-bold text-yellow-700 mb-1">Data IB Tidak Ditemukan</p>
-                            <p class="text-gray-600">Sapi berstatus Bunting namun tanggal Inseminasi Buatan tidak tercatat. Mohon periksa kembali data riwayat.</p>
+                            <p class="font-bold text-blue-700 mb-1">Sapi Sedang Bunting</p>
+                            <p class="text-gray-600 mb-3">Tanggal IB belum tercatat. Silakan input tanggal IB untuk menghitung HPL otomatis.</p>
+                            <button onclick="alert('Fitur input tanggal IB akan segera tersedia')" class="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition">
+                                <i class="fas fa-calendar-plus mr-1"></i> Input Tanggal IB
+                            </button>
                         </div>
                     </div>
                 </div>
