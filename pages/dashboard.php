@@ -89,7 +89,7 @@ $activity_config = [
     <main class="p-4 sm:p-6 pb-24 md:pb-6 space-y-6 w-full">
         
         <!-- Summary Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
             
             <!-- Total Sapi -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden group">
