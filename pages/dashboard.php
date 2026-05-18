@@ -89,10 +89,7 @@ $activity_config = [
     <main class="p-4 sm:p-6 pb-24 md:pb-6 space-y-6 w-full">
         
         <!-- Summary Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
-            
-            <!-- Total -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden group">
+        <div class="grid grid-cols-2 lg:grid-cols-6                                                                                                                                                                                                                                         qqqqq            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden group">
                 <div class="flex justify-between items-start mb-4">
                     <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
                         <i class="fas fa-layer-group"></i>
@@ -148,6 +145,18 @@ $activity_config = [
                     <span class="text-[10px] text-gray-400 font-medium">Sehat</span>
                 </div>
                 <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Sapi Hamil</h3>
+                <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_bunting; ?></div>
+            </div>
+
+            <!-- bUNTING 2 -->
+             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 relative overflow-hidden group">
+                 <div class="flex justify-between items-start mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-arrow-trend-up"></i>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-medium">Sehat</span>
+                </div>
+                <h3 class="text-xs sm:text-[13px] text-gray-500 font-semibold mb-1">Sapi Hamil 2</h3>
                 <div class="text-2xl sm:text-3xl font-bold text-slate-800"><?php echo $count_bunting; ?></div>
             </div>
         </div>

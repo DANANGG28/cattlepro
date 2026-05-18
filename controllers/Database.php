@@ -160,8 +160,10 @@ class Database {
         $token = $this->getAccessToken();
         if (!$token) return ['errors' => [['message' => 'Auth Error: token null']]];
 
-        // Cek apakah ini Query (Read-Only) untuk di-cache selama 2 detik (Micro-caching / Debounce)
+        // Cek apakah ini Query (Read-Only) atau Mutation (Write)
         $isQuery = (stripos(trim($query), 'query') === 0);
+        $isMutation = (stripos(trim($query), 'mutation') === 0);
+        
         $cacheFile = '';
         if ($isQuery) {
             $cacheKey = md5($query . json_encode($variables));
@@ -216,6 +218,15 @@ class Database {
         } else if ($isQuery && $response) {
             // Simpan hasil sukses ke micro-cache
             @file_put_contents($cacheFile, $response);
+        } else if ($isMutation && !isset($res['errors'])) {
+            // Jika mutation berhasil, clear semua cache agar query berikutnya dapat data fresh
+            $cacheDir = sys_get_temp_dir() . '/cattlepro_cache';
+            if (is_dir($cacheDir)) {
+                $files = glob($cacheDir . '/*.json');
+                foreach ($files as $file) {
+                    @unlink($file);
+                }
+            }
         }
         
         return $res;

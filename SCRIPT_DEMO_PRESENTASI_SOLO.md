@@ -39,7 +39,7 @@
 
 **[Slide: Judul Project]**
 
-> "Selamat pagi Bapak/Ibu. Saya [nama kamu] mewakili tim kami yang terdiri dari saya, Darma, Fia, dan Mika. Hari ini saya akan mempresentasikan project kami yang berjudul **CattlePro - Sistem Informasi Manajemen Reproduksi Sapi Berbasis Website**."
+> "Assalamualaikum warahmatullahi wabarakatuh Selamat pagi Bapak/Ibu. pengampu mata kuliah WORKSHOP PENGEMBANGAN PROYEK PERANGKAT LUNAK & WORKSHOP SISTEM INFORMASI Saya [nama kamu] mewakili tim kami yang terdiri dari saya, Darma, Fia, dan Mika. Hari ini saya akan mempresentasikan project kami yang berjudul **CattlePro - Sistem Informasi Manajemen Reproduksi Sapi Berbasis Website**."
 
 **[Slide: Latar Belakang]**
 
@@ -70,7 +70,7 @@
 
 **[DEMO: Dashboard]**
 
-> "Baik, ini adalah halaman Dashboard. Sebelum saya jelaskan fitur-fiturnya, perlu saya sampaikan bahwa CattlePro ini, Kami sudah deploy aplikasi ini ke VPS-hosting menggunakan Docker dan Dokploy sebagai platform deployment-nya. Untuk database, kami menggunakan PostgreSQL sebagai database engine, karena lebih powerful dan reliable untuk handle data relasional yang kompleks, plus kami integrasikan juga dengan Firebase Google Cloud untuk authentication dan realtime synchronization. API-nya sendiri kami bangun dengan GraphQL, jadi lebih flexible dan efficient dalam fetching data. Intinya, ini adalah aplikasi production-ready yang bisa diakses dari mana saja dan siap digunakan di peternakan real dengan skala besar."
+> "Baik, ini adalah halaman Dashboard. Sebelum saya jelaskan fitur-fiturnya, perlu saya sampaikan bahwa CattlePro ini, Kami sudah deploy aplikasi ini ke VPS-hosting menggunakan Dokploy berbasis docker sebagai platform deployment-nya. Untuk database, kami menggunakan PostgreSQL sebagai database engine, karena lebih powerful dan reliable untuk handle data relasional yang kompleks, plus kami integrasikan juga dengan Firebase Google Cloud untuk authentication dan realtime synchronization. API-nya sendiri kami bangun dengan GraphQL, jadi lebih flexible dan efficient dalam fetching data. Intinya, ini adalah aplikasi production-ready yang bisa diakses dari mana saja dan siap digunakan di peternakan real dengan skala besar."
 > 
 > "Nah, di Dashboard ini kita bisa lihat:
 > - **Statistik populasi** - Total sapi, berapa yang birahi, bunting, dan gagal hamil
